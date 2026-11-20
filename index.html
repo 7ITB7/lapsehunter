@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Sweep forgotten US patents and rank the ones one person could build today.">
+<title>LapseHunter</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%230d1f30'/%3E%3Crect x='10' y='20' width='44' height='24' rx='3' fill='none' stroke='%23d9534a' stroke-width='5' transform='rotate(-12 32 32)'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bp-deep:#0d1f30;
+    --bp-panel:#122a40;
+    --bp-line:#2a4a66;
+    --bp-cyan:#7fd1e8;
+    --bp-cyan-dim:#5a93ad;
+    --paper:#e9eff3;
+    --ink:#1a2530;
+    --ink-soft:#33414e;
+    --ink-dim:#5a6b7a;
+    --stamp:#d9534a;
+    --amber:#e0a458;
+    --mono:ui-monospace,'Cascadia Mono','Roboto Mono',Menlo,monospace;
+    --serif:'Times New Roman',Times,Georgia,serif;
+    --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bp-deep);
+    background-image:linear-gradient(var(--bp-line) 1px,transparent 1px),linear-gradient(90deg,var(--bp-line) 1px,transparent 1px);
+    background-size:36px 36px;
+    background-attachment:fixed;
+    color:var(--paper);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding-bottom:80px;
+  }
+  header{
+    position:sticky;top:0;z-index:20;
+    background:rgba(13,31,48,.96);
+    border-bottom:2px solid var(--bp-cyan-dim);
+    padding:12px 16px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:760px;margin:0 auto}
+  .brand h1{font-family:var(--mono);font-size:1.15rem;letter-spacing:.12em;color:var(--bp-cyan);font-weight:600}
+  .brand small{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;color:var(--bp-cyan-dim);text-transform:uppercase}
+  .spend{margin-left:auto;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;color:var(--amber);border:1px solid #5a4a2a;border-radius:10px;padding:3px 9px;white-space:nowrap}
+  main{max-width:760px;margin:0 auto;padding:14px 16px}
+
+  nav{position:fixed;bottom:0;left:0;right:0;z-index:30;display:flex;background:#0a1826;border-top:2px solid var(--bp-cyan-dim)}
+  nav button{flex:1;padding:13px 4px 16px;background:none;border:none;color:var(--bp-cyan-dim);font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+  nav button.active{color:var(--bp-cyan);background:var(--bp-panel);border-top:2px solid var(--bp-cyan);margin-top:-2px}
+  .tab{display:none}
+  .tab.active{display:block}
+
+  .panel{background:var(--bp-panel);border:1px solid var(--bp-line);border-radius:6px;padding:14px;margin-bottom:14px}
+  .panel h2{font-family:var(--mono);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--bp-cyan);margin-bottom:12px;border-bottom:1px dashed var(--bp-line);padding-bottom:8px}
+  .panel h2.sub{margin-top:20px}
+  label{display:block;font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--bp-cyan-dim);margin:10px 0 4px}
+  input[type=text],input[type=password],textarea,select{width:100%;padding:11px 12px;font-size:16px;background:#0a1826;color:var(--paper);border:1px solid var(--bp-line);border-radius:4px;font-family:var(--sans)}
+  input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--bp-cyan);outline-offset:1px}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  .btn{display:inline-block;width:100%;margin-top:14px;padding:13px;background:var(--bp-cyan);color:#08141f;border:none;border-radius:4px;font-family:var(--mono);font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+  .btn:disabled{opacity:.45;cursor:default}
+  .btn.ghost{background:none;color:var(--bp-cyan);border:1px solid var(--bp-cyan-dim)}
+  .btn.small{width:auto;padding:9px 13px;font-size:.66rem;margin-top:0}
+  .btn.danger{background:none;color:var(--stamp);border:1px solid var(--stamp)}
+  .hint{font-size:.8rem;color:var(--bp-cyan-dim);line-height:1.5;margin-top:8px}
+  .hint a{color:var(--bp-cyan)}
+  .hint strong{color:var(--paper);font-weight:600}
+  .status{font-family:var(--mono);font-size:.72rem;color:var(--amber);margin-top:10px;min-height:1.1em;word-break:break-word;line-height:1.55}
+  .check{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:.86rem;color:var(--paper);cursor:pointer;line-height:1.35}
+  .check input{width:20px;height:20px;flex:none;accent-color:var(--bp-cyan)}
+  .estimate{font-family:var(--mono);font-size:.68rem;color:var(--bp-cyan);margin-top:8px;letter-spacing:.04em}
+
+  .seg{display:flex;border:1px solid var(--bp-line);border-radius:4px;overflow:hidden}
+  .seg button{flex:1;padding:12px 4px;background:#0a1826;color:var(--bp-cyan-dim);border:none;border-right:1px solid var(--bp-line);font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;line-height:1.3}
+  .seg button:last-child{border-right:none}
+  .seg button.on{background:var(--bp-cyan);color:#08141f;font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+  .chip{padding:8px 11px;border:1px solid var(--bp-line);background:#0a1826;color:var(--bp-cyan-dim);border-radius:16px;font-size:.78rem;cursor:pointer;font-family:var(--sans)}
+  .chip.on{border-color:var(--bp-cyan);color:var(--bp-cyan);background:#12384f}
+  .bar{height:4px;background:#0a1826;border-radius:2px;margin-top:12px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:var(--bp-cyan);transition:width .25s}
+  @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+
+  /* ---------- patent cards ---------- */
+  .patent{position:relative;background:var(--paper);color:var(--ink);border-radius:3px;padding:16px 14px 14px;margin-bottom:16px;box-shadow:0 3px 0 rgba(0,0,0,.35);overflow:hidden}
+  .pno{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;color:var(--ink-dim);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .patent h3{font-family:var(--serif);font-size:1.1rem;line-height:1.3;font-weight:700;margin:8px 0 6px;padding-right:100px}
+  .stamp{position:absolute;top:40px;right:-6px;transform:rotate(10deg);font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:.16em;color:var(--stamp);border:2px solid var(--stamp);border-radius:3px;padding:3px 8px;opacity:.88;background:rgba(233,239,243,.75);max-width:120px;text-align:center}
+  .stamp.verify{color:#8a7a2b;border-color:#8a7a2b}
+  .tag{display:inline-block;font-family:var(--mono);font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;border:1px solid #8fa3b3;border-radius:2px;padding:2px 6px;margin:0 6px 4px 0;color:var(--ink-soft)}
+  .tag.solo{border-color:#3e8a5f;color:#2e6a49}
+  .tag.path{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .statusnote{font-size:.76rem;color:var(--ink-dim);line-height:1.4;margin:2px 0 4px}
+  .statusnote.warn{color:#7a5a12}
+  .scoreline{display:flex;align-items:center;gap:10px;margin:8px 0 2px}
+  .scorebox{font-family:var(--mono);font-weight:700;font-size:1.15rem;border:2px solid var(--amber);color:#8a6420;border-radius:3px;padding:2px 10px}
+  .scorebox.hi{border-color:#3e8a5f;color:#2e6a49}
+  .scorebox.lo{border-color:#a0a8ae;color:#6b757d}
+  .scorelabel{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim)}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0 6px}
+  .metrics div{border:1px solid #b6c4cf;border-radius:3px;padding:4px 2px;text-align:center;font-family:var(--mono);font-size:.55rem;color:var(--ink-dim);letter-spacing:.06em;text-transform:uppercase}
+  .metrics b{display:block;font-size:.95rem;color:var(--ink);letter-spacing:0}
+  /* signature: the then/now strip */
+  .strip{display:grid;grid-template-columns:1fr 1fr;border:1px solid #9db0be;border-radius:3px;margin:10px 0 4px;overflow:hidden}
+  .strip div{padding:7px 9px;font-size:.82rem;line-height:1.42}
+  .strip div:first-child{background:#d9e1e7;border-right:1px dashed #8fa3b3;color:var(--ink-soft)}
+  .strip b{display:block;font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;color:var(--ink-dim);margin-bottom:2px}
+  .field{font-size:.86rem;line-height:1.5;margin-top:8px}
+  .field>b{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);display:block}
+  .field.kill{color:#7a2f2a}
+  .field.kill>b{color:#a3453f}
+  .field.first{background:#e1ece4;border-left:3px solid #3e8a5f;padding:6px 8px}
+  .cardactions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+  .cardactions a{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:#2b6a8a;text-decoration:none;border-bottom:1px dashed #2b6a8a;padding:6px 0 1px}
+  .patent .btn.small{background:var(--ink);color:var(--paper)}
+  .patent .btn.small.ghost{background:none;color:var(--ink);border:1px solid #8fa3b3}
+  .patent .btn.small:disabled{opacity:.55}
+  details.paste{margin-top:10px;border-top:1px dashed #9db0be;padding-top:8px}
+  details.paste summary{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:#2b6a8a;cursor:pointer;padding:4px 0}
+  .patent textarea{background:#fff;color:var(--ink);border-color:#9db0be;font-size:15px;margin-top:6px}
+  .notes-input{margin-top:10px}
+  .notes-input span{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim)}
+  .errline{font-size:.8rem;color:#a3453f;margin-top:8px}
+
+  /* build sheet */
+  .sheet{margin-top:12px;border:2px solid var(--ink);border-radius:3px;padding:10px 10px 12px;background:#f5f8fa}
+  .sheet-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);border-bottom:1px dashed #9db0be;padding-bottom:7px}
+  .verdict{font-weight:700;font-size:.78rem;padding:2px 9px;border:2px solid;border-radius:2px}
+  .v-pursue{color:#2e6a49;border-color:#3e8a5f}
+  .v-test{color:#8a6420;border-color:var(--amber)}
+  .v-skip{color:#6b757d;border-color:#a0a8ae}
+  table.parts{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:4px}
+  table.parts td{border-bottom:1px solid #d3dde4;padding:5px 2px;vertical-align:top}
+  table.parts td:last-child{text-align:right;font-family:var(--mono);white-space:nowrap;padding-left:10px}
+  ol.steps{margin:4px 0 0 20px;font-size:.85rem;line-height:1.5}
+  ol.steps li{margin-bottom:3px}
+  .money{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+  .money div{border:1px solid #b6c4cf;border-radius:3px;padding:6px;text-align:center;font-family:var(--mono);font-size:.95rem}
+  .money b{display:block;font-size:.55rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:2px}
+  ul.rivals,ul.srcs{margin:4px 0 0 20px;font-size:.82rem;line-height:1.45}
+  ul.srcs{font-size:.76rem;word-break:break-word}
+  .sheet a{color:#2b6a8a}
+  .sheet details{margin-top:10px}
+  .sheet details summary{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#2b6a8a;cursor:pointer}
+
+  .empty{text-align:center;padding:36px 16px;color:var(--bp-cyan-dim);font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;line-height:2;border:1px dashed var(--bp-line);border-radius:6px}
+  .counter{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;color:var(--bp-cyan-dim);text-transform:uppercase;margin:4px 2px 10px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>LAPSEHUNTER</h1>
+    <small>forgotten patent sweeps · rev C</small>
+    <span class="spend" id="spend" title="Claude API spend on this device">$0.00 spent</span>
+  </div>
+</header>
+
+<main>
+<noscript><p class="hint">LapseHunter needs JavaScript turned on.</p></noscript>
+
+<!-- ============ SWEEP ============ -->
+<section id="tab-scan" class="tab active">
+  <div class="panel">
+    <h2>1 · Where to dig</h2>
+    <div class="seg" id="modeSeg"></div>
+    <p class="hint" id="modeDesc"></p>
+
+    <h2 class="sub">2 · Fields to sweep</h2>
+    <div class="chips" id="lensChips"></div>
+    <div class="row">
+      <button class="btn ghost small" data-act="lens-all">Select all</button>
+      <button class="btn ghost small" data-act="lens-none">Clear</button>
+    </div>
+    <label for="extraKw">Your own keywords (optional, comma-separated)</label>
+    <input type="text" id="extraKw" placeholder="e.g. headache, beanie, haptic">
+
+    <h2 class="sub">3 · Size</h2>
+    <select id="depth" aria-label="Sweep size">
+      <option value="quick">Quick</option>
+      <option value="standard" selected>Standard</option>
+      <option value="deep">Deep</option>
+    </select>
+    <div class="estimate" id="estimate"></div>
+    <label class="check"><input type="checkbox" id="soloOnly"> Individual and small-entity filers only (skips big-company filings)</label>
+
+    <button class="btn" id="goBtn" data-act="go">Run sweep</button>
+    <button class="btn ghost" id="stopBtn" data-act="stop" style="display:none">Stop</button>
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="status" id="scanStatus" role="status"></div>
+    <p class="hint">The sweep pulls filing titles from the USPTO, drops anything still protected or obviously chemical or pharmaceutical, then Claude scores what's left for one person with no workshop. Run it again for a fresh batch, since titles you've already scored are skipped. Open <strong>Build sheet</strong> on a promising card and Claude reads the actual patent, checks whether it's already sold, and writes a parts list, costs and a first test.</p>
+  </div>
+
+  <div class="panel" id="resultsHead" style="display:none">
+    <div class="chips" id="pathChips"></div>
+    <div class="row">
+      <div>
+        <label for="topN">Show</label>
+        <select id="topN"><option value="25" selected>Top 25</option><option value="50">Top 50</option><option value="all">Everything</option></select>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" id="weekendOnly"> Weekend-to-weeks builds only</label>
+    <label class="check"><input type="checkbox" id="showNo"> Include "not makeable" items</label>
+    <button class="btn ghost" id="topSheetsBtn" data-act="top-sheets">Build sheets for the top 3</button>
+  </div>
+  <div class="counter" id="resultCount"></div>
+  <div id="results"></div>
+  <p class="hint" style="margin-bottom:16px">The first score comes from the title alone, so it's a triage, not a verdict. A build sheet reads the real patent. Before you spend money, open the Google Patents page and check <strong>Legal status</strong> and <strong>Family</strong>.</p>
+</section>
+
+<!-- ============ SHORTLIST ============ -->
+<section id="tab-list" class="tab">
+  <div class="row" style="margin-bottom:12px">
+    <button class="btn ghost small" data-act="export-csv">Export CSV</button>
+    <button class="btn ghost small" data-act="export-json">Export JSON</button>
+  </div>
+  <div class="counter" id="listCount"></div>
+  <div id="shortlist"></div>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section id="tab-settings" class="tab">
+  <div class="panel">
+    <h2>USPTO key</h2>
+    <label for="pvKey">Open Data Portal API key</label>
+    <input type="password" id="pvKey" placeholder="paste key" autocomplete="off" spellcheck="false">
+    <p class="hint">Free. Sign in at <a href="https://data.uspto.gov/myodp" target="_blank" rel="noopener">data.uspto.gov/myodp</a> and copy the key from <strong>My ODP</strong>. A brand-new key can take a few minutes to start working.</p>
+  </div>
+  <div class="panel">
+    <h2>Claude</h2>
+    <label for="claudeKey">Anthropic API key</label>
+    <input type="password" id="claudeKey" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+    <label for="model">Model</label>
+    <select id="model"></select>
+    <p class="hint">Opus 5.5 gives the sharpest judgment and costs about twice what Sonnet does. Get a key at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
+  </div>
+  <div class="panel">
+    <h2>Privacy</h2>
+    <p class="hint" style="margin-top:0">Both keys are stored only in this browser's local storage. They're never part of the site's code, so the public GitHub page doesn't expose them. Your keys go only to the USPTO and to Anthropic, each straight from your browser.</p>
+  </div>
+  <div class="panel">
+    <h2>Data</h2>
+    <button class="btn ghost" data-act="reset-spend">Reset spend meter</button>
+    <button class="btn ghost" data-act="reset-seen">Forget sweep history (re-score everything)</button>
+    <button class="btn danger" data-act="clear-all">Erase everything on this device</button>
+  </div>
+  <button class="btn" data-act="save-settings">Save settings</button>
+  <div class="status" id="setStatus" role="status"></div>
+</section>
+</main>
+
+<nav>
+  <button class="active" data-tab="scan">Sweep</button>
+  <button data-tab="list">Shortlist</button>
+  <button data-tab="settings">Settings</button>
+</nav>
+
+<script>
+'use strict';
+/* ================= config ================= */
+const MODELS={
+  'claude-opus-5-5':{label:'Opus 5.5',pin:4,pout:20},
+  'claude-sonnet-5-5':{label:'Sonnet 5.5',pin:2,pout:10}
+};
+const DEFAULT_MODEL='claude-opus-5-5';
+const SEARCH_USD=0.01;
+const LS={set:'lh_settings',list:'lh_shortlist',seen:'lh_seen',pool:'lh_pool',offs:'lh_offsets'};
+const ODP='https://api.uspto.gov/api/v1/patent/applications/search';
+const FIELDS=[
+  'applicationNumberText','applicationMetaData.inventionTitle','applicationMetaData.filingDate','applicationMetaData.effectiveFilingDate',
+  'applicationMetaData.grantDate','applicationMetaData.patentNumber','applicationMetaData.applicationStatusCode',
+  'applicationMetaData.applicationStatusDescriptionText','applicationMetaData.applicationStatusDate',
+  'applicationMetaData.firstApplicantName','applicationMetaData.firstInventorName','applicationMetaData.applicationTypeCode',
+  'applicationMetaData.earliestPublicationNumber','applicationMetaData.entityStatusData','applicationMetaData.cpcClassificationBag',
+  'patentTermAdjustmentData','childContinuityBag'
+].join(',');
+
+const MODES={
+  term:{label:'Term-expired',y1:2001,y2:2005,clause:'',
+    desc:'Filed 2001–2005. Patents from these filings have mostly run out their 20 years. Ones still protected by a term extension are dropped automatically. Abandoned filings from these years are included too. The safest ground.'},
+  lapsed:{label:'Lapsed (fees)',y1:2006,y2:2016,clause:' AND applicationMetaData.applicationStatusCode:250',
+    desc:'Filed 2006–2016, granted, then the owner stopped paying maintenance fees. Anything that lapsed in the last two years gets a warning, because owners can sometimes revive it.'},
+  abandoned:{label:'Never granted',y1:2001,y2:2016,clause:' AND applicationMetaData.applicationStatusDescriptionText:Abandon* NOT applicationMetaData.applicationStatusCode:165 NOT applicationMetaData.applicationStatusCode:166',
+    desc:'Filed 2001–2016 and abandoned before a patent issued. The idea was published, but nobody owns it. Filings with a continuation that might still be alive are flagged.'}
+};
+const DEPTHS={
+  quick:{buckets:1,limit:15,label:'Quick'},
+  standard:{buckets:5,limit:6,label:'Standard'},
+  deep:{buckets:5,limit:12,label:'Deep'}
+};
+const LENSES=[
+  {id:'pets',name:'Pets & animals',kw:['dog','cat','pet','animal','horse','bird feeder','aquarium','leash','litter']},
+  {id:'sleep',name:'Sleep, massage & relaxation',kw:['massage','sleep','pillow','headache','posture','heating pad','snoring','aromatherapy']},
+  {id:'kitchen',name:'Kitchen & drinks',kw:['kitchen','cooking','food storage','coffee','beverage','utensil','grill','lunch box','bottle']},
+  {id:'garden',name:'Garden & yard',kw:['garden','plant','lawn','watering','planter','compost','irrigation','bird house']},
+  {id:'kids',name:'Baby & kids',kw:['infant','baby','toy','child','stroller','crib','teething','playpen']},
+  {id:'fitness',name:'Fitness & sports',kw:['exercise','fitness','workout','golf','running','bicycle','yoga','training aid','swing']},
+  {id:'outdoors',name:'Outdoors & fishing',kw:['fishing','camping','hunting','hiking','tent','boat','kayak','survival']},
+  {id:'vehicle',name:'Car & vehicle accessories',kw:['automobile','car seat','cup holder','trunk','windshield','tire','trailer','motorcycle']},
+  {id:'home',name:'Home & organization',kw:['storage','organizer','closet','hanger','shelf','drawer','laundry','hook']},
+  {id:'smart',name:'Sensors & reminders',kw:['sensor','alarm','reminder','remote control','wireless','monitor','notification','locator']},
+  {id:'wear',name:'Wearables & soft goods',kw:['hat','glove','jacket','shoe','backpack','garment','belt','harness','apparel']},
+  {id:'hobby',name:'Hobbies & games',kw:['craft','sewing','knitting','painting','hobby','card game','board game','puzzle']},
+  {id:'travel',name:'Travel & portable',kw:['luggage','suitcase','travel','passport','wallet','portable','foldable']},
+  {id:'safety',name:'Safety & emergency',kw:['safety','emergency','flashlight','smoke detector','reflective','warning light','first aid']},
+  {id:'learn',name:'Learning & teaching',kw:['educational','learning','teaching','flash card','tutoring','language learning','music lesson']},
+  {id:'apps',name:'Apps & online services',kw:['online','internet','web-based','personalized','mobile device','social network','electronic commerce','recommendation']},
+  {id:'media',name:'Music, audio & parties',kw:['music','audio','karaoke','video game','entertainment','party','wedding','photograph']},
+  {id:'care',name:'Personal care',kw:['hair','skin','cosmetic','razor','toothbrush','nail','bath','sunscreen']}
+];
+const PATHS={app:'App / software',assemble:'Assemble',sew:'Sewn',print:'3D-print / POD',outsource:'Outsource',no:'Not makeable'};
+const TIMES={wknd:'weekend',wks:'weeks',mos:'months'};
+const JUNK=/\b(compounds?|compositions?|polymers?|peptides?|antibod\w*|pharmaceutical\w*|semiconductors?|catalysts?|oligonucleotides?|genes?|proteins?|vaccines?|insecticid\w*|herbicid\w*|alloys?|reactors?|integrated circuits?|lithograph\w*|transistors?|fuel cells?|wafers?|optical fibers?|nucleic|enzymes?|polypeptides?|steroids?|chemotherap\w*|transgenic|toxins?|agonists?|antagonists?|inhibitors?|formulations?|dosage|methods? (?:for|of) treating)\b/i;
+const CPC_JUNK=/^(A61K|A61P|A01N|A01P|C0\d|C1\d|C2\d|C3\d|C40|H01L|H10|G21|B01J|B82)/;
+const CORP=/\b(inc|incorporated|corp|corporation|co|company|llc|ltd|limited|gmbh|ag|sa|nv|kk|plc|lp|university|foundation|institute|laboratories|technologies|systems|industries|group|holdings)\b\.?/i;
+
+const BUILDER=`THE BUILDER: one person with a full-time job. No coding skills (builds software only by directing AI tools). No workshop, no machining, no factory. Budget under about $2,000 to reach a first sellable version. Sells online. Can realistically make: apps and web tools built with AI; products assembled from off-the-shelf parts (sensors, pre-certified Bluetooth or Wi-Fi modules, vibration motors, batteries, microcontrollers) in a stock or 3D-printed enclosure; soft goods made by a small sewing contractor; 3D-printed or print-on-demand items; generic products ordered from a supplier and customized. Cannot make: anything needing custom tooling, injection molds, precision metal fabrication, FDA-regulated medical devices, drugs, chemicals, food or supplements, or large capital.
+
+THE HUNT: forgotten patent filings that stalled because the technology of the day was too expensive, too big, or did not exist, but is cheap or standard now (phone apps, Bluetooth, tiny sensors, cheap lithium cells, 3D printing, print-on-demand, AI, cloud services, crowdfunding, e-commerce). He does NOT want anything already sold widely today.`;
+
+/* ================= state ================= */
+function load(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+let settings=Object.assign({pvKey:'',claudeKey:'',model:DEFAULT_MODEL,spent:0},load(LS.set)||{});
+if(!MODELS[settings.model]) settings.model=DEFAULT_MODEL;
+let shortlist=load(LS.list)||[];
+let seen=new Set(load(LS.seen)||[]);
+let pool=load(LS.pool)||[];
+let offsets=load(LS.offs)||{};
+let curMode='term';
+let selected=new Set(LENSES.map(l=>l.id));
+const view={path:'all'};
+let running=false, stopFlag=false, fieldsOK=true, sheetsRunning=false;
+
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const sc=p=>p&&p.ai?p.ai.score:0;
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function cssId(id){ return String(id).replace(/[^a-zA-Z0-9]/g,'_'); }
+function chunk(a,n){ const o=[]; for(let i=0;i<a.length;i+=n) o.push(a.slice(i,i+n)); return o; }
+function fatal(msg){ const e=new Error(msg); e.fatal=true; return e; }
+function str(v,n){ return String(v==null?'':v).replace(/\s+/g,' ').trim().slice(0,n); }
+function uniq(a){ return [...new Set(a)]; }
+function safeUrl(u){ return /^https?:\/\//i.test(String(u||''))?String(u):''; }
+
+function persist(){
+  pool.sort((a,b)=>sc(b)-sc(a));
+  pool=pool.slice(0,400);
+  save(LS.pool,pool);
+  save(LS.seen,[...seen].slice(-12000));
+  save(LS.offs,offsets);
+  save(LS.set,settings);
+}
+
+/* ================= static UI ================= */
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  $('tab-'+name).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  if(name==='list') renderShortlist();
+  window.scrollTo(0,0);
+}
+function renderModes(){
+  $('modeSeg').innerHTML=Object.keys(MODES).map(k=>'<button data-act="mode" data-mode="'+k+'" class="'+(k===curMode?'on':'')+'" aria-pressed="'+(k===curMode)+'">'+esc(MODES[k].label)+'</button>').join('');
+  $('modeDesc').textContent=MODES[curMode].desc;
+  renderEstimate();
+}
+function renderLenses(){
+  $('lensChips').innerHTML=LENSES.map(l=>'<button class="chip'+(selected.has(l.id)?' on':'')+'" data-act="lens" data-lens="'+l.id+'" aria-pressed="'+selected.has(l.id)+'">'+esc(l.name)+'</button>').join('');
+  renderEstimate();
+}
+function renderPathChips(){
+  const opts=[['all','All']].concat(Object.keys(PATHS).filter(k=>k!=='no').map(k=>[k,PATHS[k]]));
+  $('pathChips').innerHTML=opts.map(o=>'<button class="chip'+(view.path===o[0]?' on':'')+'" data-act="path" data-path="'+o[0]+'" aria-pressed="'+(view.path===o[0])+'">'+esc(o[1])+'</button>').join('');
+}
+function renderSpend(){ $('spend').textContent='$'+(settings.spent||0).toFixed(2)+' spent'; }
+function renderModelSelect(){
+  $('model').innerHTML=Object.keys(MODELS).map(k=>'<option value="'+k+'"'+(k===settings.model?' selected':'')+'>'+esc(MODELS[k].label)+' — $'+MODELS[k].pin+' / $'+MODELS[k].pout+' per million tokens in / out</option>').join('');
+}
+function renderEstimate(){
+  const d=DEPTHS[$('depth').value]||DEPTHS.standard;
+  const nb=buckets(MODES[curMode].y1,MODES[curMode].y2,d.buckets).length;
+  const titles=activeLenses().length*nb*d.limit;
+  const m=MODELS[settings.model];
+  const perBatch=(2200*m.pin+3200*m.pout)/1e6;
+  const cost=Math.ceil(titles*0.75/25)*perBatch;
+  $('estimate').textContent=titles?('Pulls up to '+titles.toLocaleString('en-US')+' titles · about $'+cost.toFixed(2)+' with '+m.label):'Pick at least one field.';
+}
+function setProgress(frac,text){
+  $('barFill').style.width=Math.round(Math.max(0,Math.min(1,frac))*100)+'%';
+  if(text!=null) $('scanStatus').textContent=text;
+}
+function setBusy(b){ $('goBtn').style.display=b?'none':'block'; $('stopBtn').style.display=b?'block':'none'; }
+
+/* ================= USPTO ================= */
+function activeLenses(){
+  const out=LENSES.filter(l=>selected.has(l.id));
+  const el=$('extraKw');
+  const extra=el?el.value.split(',').map(s=>s.trim()).filter(Boolean):[];
+  if(extra.length) out.push({id:'custom:'+extra.join('|').toLowerCase().slice(0,80),name:'Your keywords',kw:extra});
+  return out;
+}
+function buckets(y1,y2,maxB){
+  if(maxB<=1) return [[y1,y2]];
+  const span=y2-y1+1, size=Math.max(1,Math.ceil(span/maxB)), out=[];
+  for(let y=y1;y<=y2;y+=size) out.push([y,Math.min(y+size-1,y2)]);
+  return out;
+}
+function kwTerm(k){
+  k=String(k).replace(/["\\():\[\]{}^~*?!]/g,' ').replace(/\s+/g,' ').trim();
+  if(!k) return '';
+  return /[\s\-\/]/.test(k)?'"'+k+'"':k;
+}
+function buildQuery(lens,mode,y1,y2){
+  const kw=lens.kw.map(kwTerm).filter(Boolean).join(' OR ');
+  return 'applicationMetaData.inventionTitle:('+kw+')'
+    +' AND applicationMetaData.filingDate:['+y1+'-01-01 TO '+y2+'-12-31]'
+    +' AND applicationMetaData.applicationTypeCode:UTL'
+    +mode.clause;
+}
+async function odpSearch(q,limit,offset){
+  const url=()=>ODP+'?q='+encodeURIComponent(q)+'&limit='+limit+'&offset='+offset+(fieldsOK?'&fields='+encodeURIComponent(FIELDS):'');
+  for(let attempt=0;attempt<5;attempt++){
+    let res;
+    try{ res=await fetch(url(),{headers:{'X-API-KEY':settings.pvKey,'Accept':'application/json'}}); }
+    catch(e){
+      if(attempt<2){ await sleep(1200); continue; }
+      throw fatal('Could not reach the USPTO ('+e.message+'). Check your connection and try again.');
+    }
+    if(res.status===401||res.status===403) throw fatal('The USPTO refused your key (HTTP '+res.status+'). A brand-new key can take a few minutes to start working. Otherwise re-copy it from data.uspto.gov/myodp into Settings.');
+    if(res.status===404) return {bag:[],count:0};
+    if(res.status===429){ await sleep(2000*(attempt+1)); continue; }
+    if(res.status===400&&fieldsOK){ fieldsOK=false; continue; }
+    if(res.status>=500){ await sleep(1500*(attempt+1)); continue; }
+    if(!res.ok) throw new Error('USPTO HTTP '+res.status);
+    const d=await res.json();
+    return {bag:d.patentFileWrapperDataBag||[],count:Number(d.count)||0};
+  }
+  throw new Error('The USPTO kept refusing requests (rate limit). Wait a minute and run again.');
+}
+function tcase(s){
+  const letters=s.match(/[A-Za-z]/g)||[];
+  const upper=letters.filter(c=>c===c.toUpperCase()).length;
+  if(letters.length&&upper/letters.length>0.7) return s.toLowerCase().replace(/(^|[\s\-\/(])([a-z])/g,(m,a,b)=>a+b.toUpperCase());
+  return s;
+}
+function parseRecord(w){
+  const m=w.applicationMetaData||{};
+  const appNo=String(w.applicationNumberText||m.applicationNumberText||'').trim();
+  if(!appNo) return null;
+  const applicant=String(m.firstApplicantName||'').trim();
+  const inventor=String(m.firstInventorName||'').trim();
+  const entity=String((m.entityStatusData||{}).businessEntityStatusCategory||'');
+  const corp=!!applicant&&CORP.test(applicant);
+  const p={
+    appNo,
+    patentNo:String(m.patentNumber||'').replace(/\D/g,''),
+    pubNo:String(m.earliestPublicationNumber||'').replace(/[\s\-]/g,''),
+    title:tcase(String(m.inventionTitle||'(untitled)').replace(/\s+/g,' ').trim()),
+    statusCode:Number(m.applicationStatusCode)||0,
+    statusText:String(m.applicationStatusDescriptionText||'').replace(/\s+/g,' ').trim(),
+    statusDate:String(m.applicationStatusDate||'').slice(0,10),
+    filed:String(m.filingDate||m.effectiveFilingDate||'').slice(0,10),
+    granted:String(m.grantDate||'').slice(0,10),
+    pta:Number((w.patentTermAdjustmentData||{}).adjustmentTotalQuantity)||0,
+    applicant,inventor,entity,
+    kids:(w.childContinuityBag||[]).map(c=>String(c.claimParentageTypeCode||'child')),
+    cpc:String((m.cpcClassificationBag||[])[0]||'').replace(/\s+/g,'')
+  };
+  p.who=applicant||(inventor?'Inventor: '+inventor:'');
+  p.kind=(corp||/undiscounted/i.test(entity))?'company':(/micro/i.test(entity)?'solo':(/small/i.test(entity)?'small':'unknown'));
+  p.cls=classify(p);
+  return p;
+}
+function classify(p){
+  const s=(p.statusText||'').toLowerCase(), code=p.statusCode, now=Date.now();
+  if(code===159||/provisional/.test(s)) return {label:'PROVISIONAL',ok:false,drop:true,note:'A provisional placeholder, not a patent filing.'};
+  if(code===165||/restored/.test(s)) return {label:'REVIVED',ok:false,drop:true,note:'Abandoned and later restored.'};
+  if(code===166||/file-wrapper-continuation/.test(s)) return {label:'CONTINUED',ok:false,drop:true,note:'Replaced by a continuation filing.'};
+  if(s.includes('abandon')){
+    if(p.kids.length) return {label:'ABANDONED · CHILD',ok:false,note:'Abandoned '+(p.statusDate||'')+', but it has '+p.kids.length+' child filing'+(p.kids.length>1?'s':'')+' ('+uniq(p.kids).join(', ')+'). One may be a live patent, so check the Family list on Google Patents.'};
+    if(!p.pubNo&&!p.patentNo) return {label:'UNPUBLISHED',ok:false,drop:true,note:'Never published, so the details are not public.'};
+    return {label:'ABANDONED',ok:true,note:'Abandoned '+(p.statusDate||'')+' before a patent issued. Free to use.'};
+  }
+  let exp=null, ymd='', ext='';
+  if(p.filed){
+    exp=new Date(p.filed+'T00:00:00Z');
+    exp.setUTCFullYear(exp.getUTCFullYear()+20);
+    exp.setUTCDate(exp.getUTCDate()+p.pta);
+    ymd=exp.toISOString().slice(0,10);
+    ext=p.pta?' (includes '+p.pta+' days of term extension)':'';
+  }
+  const termOver=!!exp&&exp.getTime()<now;
+  if(code===250||s.includes('nonpayment')){
+    if(termOver) return {label:'EXPIRED',ok:true,note:'Lapsed '+(p.statusDate||'')+' for unpaid fees, and its full term ended about '+ymd+' anyway. Free to use.'};
+    const d=p.statusDate?Date.parse(p.statusDate+'T00:00:00Z'):NaN;
+    if(isFinite(d)&&now-d<730*864e5) return {label:'RECENT LAPSE',ok:false,note:'Lapsed '+p.statusDate+'. An owner can sometimes revive a recent lapse by paying late fees.'};
+    return {label:'LAPSED',ok:true,note:'Lapsed '+(p.statusDate||'')+' for unpaid maintenance fees.'};
+  }
+  if(p.patentNo&&exp){
+    if(termOver) return {label:'EXPIRED',ok:true,note:'Term ended about '+ymd+ext+'. Free to use.'};
+    return {label:'IN FORCE',ok:false,drop:true,note:'Still protected until about '+ymd+ext+'.'};
+  }
+  return {label:'CHECK STATUS',ok:false,note:p.statusText||'Status unclear.'};
+}
+
+/* ================= Claude ================= */
+function track(usage,model){
+  if(!usage) return 0;
+  const m=MODELS[model]||MODELS[DEFAULT_MODEL];
+  const tin=(usage.input_tokens||0)+(usage.cache_creation_input_tokens||0)*1.25+(usage.cache_read_input_tokens||0)*0.1;
+  const searches=(usage.server_tool_use&&usage.server_tool_use.web_search_requests)||0;
+  const cost=tin*m.pin/1e6+(usage.output_tokens||0)*m.pout/1e6+searches*SEARCH_USD;
+  settings.spent=(settings.spent||0)+cost;
+  save(LS.set,settings);
+  renderSpend();
+  return cost;
+}
+async function callClaude(body){
+  const headers={'content-type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
+  if(settings.claudeKey) headers['x-api-key']=settings.claudeKey;
+  for(let attempt=0;attempt<4;attempt++){
+    let res;
+    try{ res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers,body:JSON.stringify(body)}); }
+    catch(e){
+      if(attempt<1){ await sleep(1500); continue; }
+      throw fatal('Could not reach Claude ('+e.message+'). Check your connection.');
+    }
+    if(res.status===401||res.status===403) throw fatal('Claude refused the key (HTTP '+res.status+'). Paste your Anthropic API key in Settings.');
+    if(res.status===404) throw fatal('Model "'+body.model+'" was not found. Pick the other model in Settings.');
+    if(res.status===429||res.status===529||res.status>=500){ await sleep(3000*(attempt+1)); continue; }
+    if(res.status===400){
+      let msg=''; try{ msg=((await res.json()).error||{}).message||''; }catch(e){}
+      const err=new Error('Claude rejected the request: '+msg.slice(0,180)); err.status=400; throw err;
+    }
+    if(!res.ok) throw new Error('Claude API HTTP '+res.status);
+    const data=await res.json();
+    track(data.usage,body.model);
+    return data;
+  }
+  throw new Error('Claude is overloaded right now. Try again in a minute.');
+}
+function textOf(content){ return (content||[]).filter(b=>b.type==='text').map(b=>b.text).join(''); }
+function finalText(content){
+  let idx=-1;
+  (content||[]).forEach((b,i)=>{ if(b.type!=='text') idx=i; });
+  const t=(content||[]).slice(idx+1).filter(b=>b.type==='text').map(b=>b.text).join('');
+  return t.indexOf('{')>=0?t:textOf(content);
+}
+function parseJson(text,kind){
+  const t=String(text).replace(/```json|```/g,'').trim();
+  const open=kind==='array'?'[':'{', close=kind==='array'?']':'}';
+  const a=t.indexOf(open), b=t.lastIndexOf(close);
+  if(a<0) throw new Error('Claude did not return JSON');
+  try{ return JSON.parse(t.slice(a,b+1)); }
+  catch(e){
+    if(kind==='array'){
+      const cut=t.lastIndexOf('}');
+      if(cut>a) return JSON.parse(t.slice(a,cut+1)+']');
+    }
+    throw e;
+  }
+}
+function clamp(n){ n=Math.round(Number(n)); return isFinite(n)?Math.min(10,Math.max(1,n)):1; }
+function normalize(r){
+  const path=PATHS[r.path]?r.path:'no';
+  const o={
+    what:str(r.what,220),then:str(r.then,200),unlock:str(r.unlock,200),path,t:TIMES[r.t]?r.t:'mos',
+    make:clamp(r.make),now:clamp(r.now),want:clamp(r.want),open:clamp(r.open),
+    pitch:str(r.pitch,280),kill:str(r.kill,280),q:str(r.q,80)
+  };
+  let s=0.30*o.make+0.25*o.now+0.25*o.want+0.20*o.open;
+  if(path==='no') s=Math.min(s,3);
+  o.score=Math.round(s*10)/10;
+  return o;
+}
+function kindLabel(p){ return p.kind==='solo'?'micro entity (likely individual)':p.kind==='small'?'small entity':p.kind==='company'?'large company':'filer type unknown'; }
+
+async function triageBatch(items){
+  const lines=items.map((p,k)=>(k+1)+'. ['+(p.filed||'').slice(0,4)+'] '+p.title+' | '+(p.who||'unknown')+' | '+kindLabel(p)+' | CPC '+(p.cpc||'-')+' | '+p.cls.label).join('\n');
+  const prompt=`You are screening forgotten US patent filings for one builder who wants a product business he can start with almost no effort.
+
+${BUILDER}
+
+You only have the title, filing year, filer, CPC class and status, so you are inferring the invention. Stay skeptical: if a title is vague, score it low rather than inventing a product. A micro or small entity suggests a garage inventor whose idea never got commercialized; a large company suggests a strategic abandonment.
+
+ITEMS:
+${lines}
+
+Return ONLY a JSON array (no markdown, no preamble), one object per item, in order:
+{"i":<number>,"what":"plain-English guess at the product, max 14 words","then":"why it likely stalled in its filing year, max 12 words","unlock":"what makes it easy in 2026, max 12 words","path":"app|assemble|sew|print|outsource|no","t":"wknd|wks|mos","make":1-10,"now":1-10,"want":1-10,"open":1-10,"pitch":"what he would actually sell and how, max 18 words","kill":"the most likely reason this is NOT worth doing, max 18 words","q":"2-5 word shopping search that would show if it is already sold"}
+
+Scoring — be harsh; most items should land under 5:
+- make: how easily the builder above could produce a sellable version. 1 = needs a factory, lab or regulatory approval; 10 = an app or simple assembly done in a weekend.
+- now: how much 2026 tech changes feasibility versus the filing year. 1 = nothing changed; 10 = impossible then, trivial now.
+- want: plausible demand from real buyers today.
+- open: likelihood nobody sells this today. If you recognize a product category clearly sold today, score 3 or lower.
+- path "no" = not makeable by this builder. t = time to a first sellable version.`;
+  const data=await callClaude({model:settings.model,max_tokens:7000,messages:[{role:'user',content:prompt}]});
+  const arr=parseJson(textOf(data.content),'array');
+  items.forEach((p,k)=>{
+    const r=arr.find(x=>Number(x.i)===k+1);
+    if(r) p.ai=normalize(r);
+  });
+}
+
+/* ================= sweep ================= */
+let renderTimer=null;
+function renderSoon(){ if(renderTimer) return; renderTimer=setTimeout(()=>{ renderTimer=null; renderResults(); },400); }
+
+async function runSweep(){
+  if(running) return;
+  const st=$('scanStatus');
+  if(!settings.pvKey){ st.textContent='Add your USPTO key in Settings first.'; showTab('settings'); $('pvKey').focus(); return; }
+  if(!settings.claudeKey){ st.textContent='Add your Anthropic API key in Settings first. Claude does the scoring.'; showTab('settings'); $('claudeKey').focus(); return; }
+  const lenses=activeLenses();
+  if(!lenses.length){ st.textContent='Pick at least one field to sweep.'; return; }
+  const mode=MODES[curMode], depth=DEPTHS[$('depth').value]||DEPTHS.standard;
+  const jobs=[];
+  lenses.forEach(l=>buckets(mode.y1,mode.y2,depth.buckets).forEach(b=>jobs.push({lens:l,y1:b[0],y2:b[1]})));
+  running=true; stopFlag=false; fieldsOK=true; setBusy(true);
+  const raw=new Map();
+  let failed=0, done=0, matched=0, aiFail=0, scoredN=0, best=null;
+  try{
+    /* phase 1: USPTO */
+    const queue=jobs.slice();
+    const pull=async()=>{
+      while(queue.length&&!stopFlag){
+        const j=queue.shift();
+        const key=curMode+'|'+j.lens.id+'|'+j.y1+'-'+j.y2+'|'+depth.limit;
+        const off=offsets[key]||0;
+        try{
+          const r=await odpSearch(buildQuery(j.lens,mode,j.y1,j.y2),depth.limit,off);
+          matched+=r.count;
+          r.bag.forEach(w=>{ const p=parseRecord(w); if(p&&!raw.has(p.appNo)) raw.set(p.appNo,p); });
+          offsets[key]=r.bag.length<depth.limit?0:off+depth.limit;
+        }catch(err){ if(err.fatal) throw err; failed++; }
+        done++;
+        setProgress(0.3*done/jobs.length,'Step 1 of 2: pulling USPTO records '+done+'/'+jobs.length+' · '+raw.size+' titles');
+        await sleep(150);
+      }
+    };
+    await Promise.all([pull(),pull(),pull()]);
+    if(!raw.size){
+      st.textContent=failed?'Every USPTO request failed. Check your key in Settings and try again.':'No filings came back. Try another mode or more fields.';
+      setProgress(0); return;
+    }
+    /* filter */
+    const soloOnly=$('soloOnly').checked;
+    const skip={seen:0,junk:0,live:0,company:0,dup:0};
+    const titles=new Set();
+    const cand=[...raw.values()].filter(p=>{
+      if(seen.has(p.appNo)){ skip.seen++; return false; }
+      if(JUNK.test(p.title)||CPC_JUNK.test(p.cpc)){ skip.junk++; seen.add(p.appNo); return false; }
+      if(p.cls.drop){ if(p.cls.label==='IN FORCE') skip.live++; else skip.junk++; return false; }
+      if(soloOnly&&p.kind==='company'){ skip.company++; return false; }
+      const tk=p.title.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+      if(titles.has(tk)){ skip.dup++; seen.add(p.appNo); return false; }
+      titles.add(tk); return true;
+    });
+    const skipText=[skip.live&&skip.live+' still protected',skip.junk&&skip.junk+' chemical/medical/unusable',skip.seen&&skip.seen+' already scored',skip.company&&skip.company+' big-company',skip.dup&&skip.dup+' duplicates'].filter(Boolean).join(', ');
+    if(!cand.length){
+      persist();
+      st.textContent='Pulled '+raw.size+' titles, but none were new and usable ('+skipText+'). Run again for the next batch, or add more fields.';
+      setProgress(1); return;
+    }
+    /* phase 2: Claude */
+    const batches=chunk(cand,25);
+    let doneB=0;
+    const bq=batches.slice();
+    const work=async()=>{
+      while(bq.length&&!stopFlag){
+        const b=bq.shift();
+        try{ await triageBatch(b); }
+        catch(err){ if(err.fatal) throw err; aiFail+=b.length; }
+        b.filter(p=>p.ai).forEach(p=>{
+          seen.add(p.appNo); pool.push(p); scoredN++;
+          if(p.ai.path!=='no'&&(!best||p.ai.score>best.ai.score)) best=p;
+        });
+        doneB++;
+        persist(); renderSoon();
+        setProgress(0.3+0.7*doneB/batches.length,'Step 2 of 2: '+MODELS[settings.model].label+' scoring batch '+doneB+'/'+batches.length+' · '+cand.length+' titles');
+      }
+    };
+    await Promise.all([work(),work(),work()]);
+    persist(); renderResults();
+    st.textContent=(stopFlag?'Stopped. ':'Done. ')+scoredN+' titles scored out of '+matched.toLocaleString('en-US')+' matching filings'
+      +(best?' · best new: '+best.ai.score.toFixed(1)+' "'+best.title.slice(0,50)+'"':'')
+      +(skipText?' · skipped '+skipText:'')
+      +(failed?' · '+failed+' USPTO requests failed':'')
+      +(aiFail?' · '+aiFail+' titles unscored (the next run retries them)':'')+'.';
+    setProgress(1);
+  }catch(err){
+    stopFlag=true;
+    st.textContent='⚠ '+err.message;
+    persist(); renderResults();
+  }finally{
+    running=false; setBusy(false);
+  }
+}
+
+/* ================= build sheet ================= */
+function googleId(p){ return p.patentNo?'US'+p.patentNo:(p.pubNo||''); }
+function googleUrl(p){
+  const id=googleId(p);
+  return id?'https://patents.google.com/patent/'+encodeURIComponent(id)+'/en':'https://patents.google.com/?q='+encodeURIComponent('"'+p.title+'"');
+}
+function sourcesOf(content){
+  const out=[], have=new Set();
+  const add=(u,t)=>{ u=safeUrl(u); if(u&&!have.has(u)){ have.add(u); out.push({url:u,title:str(t||u,140)}); } };
+  (content||[]).forEach(b=>{
+    if(b.type==='web_search_tool_result'&&Array.isArray(b.content)) b.content.forEach(r=>add(r.url,r.title));
+    if(b.type==='web_fetch_tool_result'&&b.content&&b.content.type==='web_fetch_result') add(b.content.url,b.content.content&&b.content.content.title);
+    if(b.type==='text'&&Array.isArray(b.citations)) b.citations.forEach(c=>add(c.url,c.title));
+  });
+  return out;
+}
+function patentRead(content){
+  return (content||[]).some(b=>b.type==='web_fetch_tool_result'&&b.content&&b.content.type==='web_fetch_result');
+}
+function sheetPrompt(p,pasted,useWeb){
+  const num=[p.patentNo&&'US patent '+Number(p.patentNo).toLocaleString('en-US'),p.pubNo&&'publication '+p.pubNo,'application '+p.appNo].filter(Boolean).join(' · ');
+  const steps=useWeb
+    ?(pasted
+      ?'1. Use the pasted text above as the description of the invention.\n'
+      :'1. Fetch the patent page above with web_fetch and read the abstract and first claim. If the fetch fails, run one web_search for "'+(googleId(p)||p.title)+'" to find the abstract.\n')
+     +'2. Run at most 3 web searches to check whether this product, or anything doing the same job, is already sold today (Amazon, Etsy, Kickstarter or Indiegogo, app stores). Search by what the product does, not by the patent title.\n3. Then write the build sheet.'
+    :'Web access is not available for this request. Work from '+(pasted?'the pasted text':'the title only')+' and say so in "read".';
+  return `Write a build sheet for one forgotten US patent filing, for this builder:
+
+${BUILDER}
+
+THE FILING
+Title: ${p.title}
+Numbers: ${num}
+Filed: ${p.filed||'unknown'} · Status: ${p.statusText||p.cls.label}${p.statusDate?' ('+p.statusDate+')':''}
+Filer: ${p.who||'unknown'} (${kindLabel(p)})
+${pasted?'TEXT FROM THE PATENT (pasted by the user):\n'+pasted:'Patent page: '+googleUrl(p)}
+
+STEPS
+${steps}
+
+Rules: be harsh and specific; USD prices; if a close product is already sold widely, say so plainly and score "s_open" 3 or lower. Only put a URL in "rivals" if it appeared in your search results. Plain text inside fields, no markdown.
+
+Return ONLY one JSON object:
+{"read":"patent|pasted|search|title (what you actually based this on)","what":"what the invention really is, max 25 words","then":"why it stalled in its filing year, max 20 words","unlock":"what makes it easy now, max 20 words","v1":"the simplest sellable version 1, max 40 words","parts":[{"item":"part or service","cost":"$ per unit"}],"steps":["3 to 6 build steps"],"unit_cost":"$","price":"$ retail","channels":"where to sell, max 15 words","compliance":"FCC, CPSIA, UL, FDA or other rules to check, or 'none obvious', max 25 words","market":"what your searches found about similar products today, max 40 words","rivals":[{"name":"","url":"","price":""}],"risks":"max 30 words","first_test":"the cheapest test in the next 48 hours, max 40 words","verdict":"pursue|test|skip","path":"app|assemble|sew|print|outsource|no","t":"wknd|wks|mos","s_make":1-10,"s_now":1-10,"s_want":1-10,"s_open":1-10}
+Use at most 8 parts and 3 rivals.`;
+}
+async function runSheetCall(p,pasted,useWeb){
+  const body={model:settings.model,max_tokens:4500,messages:[{role:'user',content:sheetPrompt(p,pasted,useWeb)}]};
+  if(useWeb){
+    body.tools=[];
+    if(!pasted) body.tools.push({type:'web_fetch_20250910',name:'web_fetch',max_uses:2,max_content_tokens:7000,allowed_domains:['patents.google.com']});
+    body.tools.push({type:'web_search_20250305',name:'web_search',max_uses:4,user_location:{type:'approximate',country:'US'}});
+  }
+  let assistant=[], data=null;
+  for(let round=0;round<4;round++){
+    data=await callClaude(body);
+    assistant=assistant.concat(data.content||[]);
+    if(data.stop_reason!=='pause_turn') break;
+    body.messages=[body.messages[0],{role:'assistant',content:assistant}];
+  }
+  return assistant;
+}
+function patch(id,fields){
+  const a=pool.find(p=>p.appNo===id), b=shortlist.find(p=>p.appNo===id);
+  [a,b].forEach(x=>{ if(x) Object.assign(x,fields); });
+  persist(); save(LS.list,shortlist);
+  return a||b;
+}
+async function buildSheet(id){
+  const p=find(id); if(!p||p.busy) return;
+  const typed=[...document.querySelectorAll('[data-card="'+cssId(id)+'"] textarea[data-paste]')].map(t=>t.value.trim()).sort((a,b)=>b.length-a.length)[0]||'';
+  const pasted=typed.length>40?typed.slice(0,8000):'';
+  patch(id,{busy:true,sheetErr:''}); refreshCard(id);
+  try{
+    let content, offline=false;
+    try{ content=await runSheetCall(p,pasted,true); }
+    catch(err){
+      if(err.status!==400) throw err;
+      offline=true;
+      content=await runSheetCall(p,pasted,false);
+    }
+    const r=parseJson(finalText(content),'object');
+    const sources=sourcesOf(content).slice(0,10);
+    const okUrls=new Set(sources.map(s=>s.url));
+    const ai=normalize({what:r.what,then:r.then,unlock:r.unlock,path:r.path,t:r.t,make:r.s_make,now:r.s_now,want:r.s_want,open:r.s_open,
+      pitch:r.v1,kill:r.risks,q:(p.ai&&p.ai.q)||''});
+    const sheet={
+      read:str(r.read,20)||(pasted?'pasted':'title'),
+      fetched:patentRead(content), offline,
+      v1:str(r.v1,320),
+      parts:(Array.isArray(r.parts)?r.parts:[]).slice(0,8).map(x=>({item:str(x.item,90),cost:str(x.cost,24)})).filter(x=>x.item),
+      steps:(Array.isArray(r.steps)?r.steps:[]).slice(0,6).map(s=>str(s,220)).filter(Boolean),
+      unit_cost:str(r.unit_cost,24),price:str(r.price,24),channels:str(r.channels,140),
+      compliance:str(r.compliance,220),market:str(r.market,360),
+      rivals:(Array.isArray(r.rivals)?r.rivals:[]).slice(0,3).map(x=>({name:str(x.name,90),price:str(x.price,24),url:okUrls.has(String(x.url||''))?String(x.url):''})).filter(x=>x.name),
+      risks:str(r.risks,260),first:str(r.first_test,320),
+      verdict:['pursue','test','skip'].includes(r.verdict)?r.verdict:'test',
+      sources,at:new Date().toISOString().slice(0,10),model:MODELS[settings.model].label
+    };
+    patch(id,{ai,sheet,busy:false});
+  }catch(err){
+    patch(id,{busy:false,sheetErr:err.message});
+  }
+  refreshCard(id);
+}
+async function topSheets(){
+  if(sheetsRunning) return;
+  const list=visibleList().filter(p=>!p.sheet).slice(0,3);
+  if(!list.length){ $('scanStatus').textContent='The top cards already have build sheets.'; return; }
+  if(!settings.claudeKey){ showTab('settings'); return; }
+  sheetsRunning=true; const btn=$('topSheetsBtn'); btn.disabled=true;
+  try{
+    for(let i=0;i<list.length;i++){
+      btn.textContent='Writing build sheet '+(i+1)+' of '+list.length+'…';
+      await buildSheet(list[i].appNo);
+    }
+  }finally{
+    sheetsRunning=false; btn.disabled=false; btn.textContent='Build sheets for the top 3';
+  }
+}
+
+/* ================= rendering ================= */
+function find(id){ return pool.find(p=>p.appNo===id)||shortlist.find(p=>p.appNo===id); }
+function fmtNum(n){ return /^\d+$/.test(n)?Number(n).toLocaleString('en-US'):n; }
+function visibleList(){
+  const showNo=$('showNo').checked, wk=$('weekendOnly').checked;
+  return pool.filter(p=>p.ai)
+    .filter(p=>showNo||p.ai.path!=='no')
+    .filter(p=>view.path==='all'||p.ai.path===view.path)
+    .filter(p=>!wk||p.ai.t!=='mos')
+    .sort((a,b)=>sc(b)-sc(a));
+}
+function sheetHtml(s){
+  const vcls='v-'+s.verdict;
+  const basis=s.fetched?'read the patent page':s.read==='pasted'?'used your pasted text':s.read==='search'?'found the abstract by search':'title only';
+  let h='<div class="sheet">'
+    +'<div class="sheet-h"><span class="verdict '+vcls+'">'+esc(s.verdict.toUpperCase())+'</span><span>Build sheet · '+esc(basis)+' · '+esc(s.model||'')+' · '+esc(s.at||'')+'</span></div>';
+  if(s.offline) h+='<div class="statusnote warn">Web search is switched off for your Anthropic account, so this sheet couldn\'t check the market.</div>';
+  if(s.v1) h+='<div class="field"><b>Version 1</b>'+esc(s.v1)+'</div>';
+  if(s.parts.length) h+='<div class="field"><b>Parts &amp; services</b><table class="parts">'+s.parts.map(x=>'<tr><td>'+esc(x.item)+'</td><td>'+esc(x.cost)+'</td></tr>').join('')+'</table></div>';
+  if(s.steps.length) h+='<div class="field"><b>Build steps</b><ol class="steps">'+s.steps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol></div>';
+  if(s.unit_cost||s.price) h+='<div class="money"><div><b>Unit cost</b>'+esc(s.unit_cost||'—')+'</div><div><b>Sell at</b>'+esc(s.price||'—')+'</div></div>';
+  if(s.channels) h+='<div class="field"><b>Where to sell</b>'+esc(s.channels)+'</div>';
+  if(s.compliance) h+='<div class="field"><b>Rules to check</b>'+esc(s.compliance)+'</div>';
+  if(s.market) h+='<div class="field"><b>Market check</b>'+esc(s.market)+'</div>';
+  if(s.rivals.length) h+='<ul class="rivals">'+s.rivals.map(x=>'<li>'+(x.url?'<a href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.name)+'</a>':esc(x.name))+(x.price?' · '+esc(x.price):'')+'</li>').join('')+'</ul>';
+  if(s.risks) h+='<div class="field kill"><b>Risks</b>'+esc(s.risks)+'</div>';
+  if(s.first) h+='<div class="field first"><b>48-hour test</b>'+esc(s.first)+'</div>';
+  if(s.sources.length) h+='<details><summary>Sources ('+s.sources.length+')</summary><ul class="srcs">'+s.sources.map(x=>'<li><a href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.title)+'</a></li>').join('')+'</ul></details>';
+  return h+'</div>';
+}
+function cardHtml(p,inList){
+  const ai=p.ai, c=p.cls||{label:'CHECK STATUS',ok:false,note:''};
+  const saved=shortlist.some(w=>w.appNo===p.appNo);
+  const num=p.patentNo?('US '+esc(fmtNum(p.patentNo))+' · APP '+esc(p.appNo)):('APP '+esc(p.appNo)+(p.pubNo?' · '+esc(p.pubNo):''));
+  const dates=(p.filed?'FILED '+esc(p.filed):'')+(p.granted?' · GRANTED '+esc(p.granted):'');
+  const scls=ai?(ai.score>=7?'hi':(ai.score<=4?'lo':'')):'lo';
+  const kindTag=p.kind==='solo'?'<span class="tag solo">Likely individual</span>':p.kind==='small'?'<span class="tag solo">Small entity</span>':p.kind==='company'?'<span class="tag">Large company</span>':'';
+  let h='<div class="pno"><span>'+num+'</span><span>'+dates+'</span></div>'
+    +'<span class="stamp'+(c.ok?'':' verify')+'">'+esc(c.label)+'</span>'
+    +'<h3>'+esc(p.title)+'</h3>'
+    +'<div>'+kindTag+(p.who?'<span class="tag">'+esc(p.who.slice(0,44))+'</span>':'')
+    +(ai?'<span class="tag path">'+esc(PATHS[ai.path])+' · '+esc(TIMES[ai.t])+'</span>':'')+'</div>'
+    +(c.note?'<div class="statusnote'+(c.ok?'':' warn')+'">'+esc(c.note)+'</div>':'');
+  if(ai){
+    const year=(p.filed||'').slice(0,4)||'then';
+    h+='<div class="scoreline"><span class="scorebox '+scls+'">'+ai.score.toFixed(1)+'</span><span class="scorelabel">opportunity score'+(p.sheet?' · from build sheet':' · from title')+'</span></div>'
+      +'<div class="metrics"><div><b>'+ai.make+'</b>Makeable</div><div><b>'+ai.now+'</b>Tech unlock</div><div><b>'+ai.want+'</b>Demand</div><div><b>'+ai.open+'</b>Still open</div></div>';
+    if(ai.then||ai.unlock) h+='<div class="strip"><div><b>'+esc(year)+'</b>'+esc(ai.then||'—')+'</div><div><b>2026</b>'+esc(ai.unlock||'—')+'</div></div>';
+    h+='<div class="field"><b>'+(p.sheet?'What it is':'Likely product (guessed from title)')+'</b>'+esc(ai.what)+'</div>';
+    if(!p.sheet) h+='<div class="field"><b>The play</b>'+esc(ai.pitch)+'</div><div class="field kill"><b>Why it may be dead</b>'+esc(ai.kill)+'</div>';
+  }
+  if(p.sheet) h+=sheetHtml(p.sheet);
+  if(p.sheetErr) h+='<div class="errline">⚠ Build sheet failed: '+esc(p.sheetErr)+'</div>';
+  if(inList) h+='<div class="notes-input"><span>Notes</span><textarea rows="2" data-note="'+esc(p.appNo)+'" aria-label="Notes">'+esc(p.notes||'')+'</textarea></div>';
+  const sheetLabel=p.busy?'Writing build sheet… (about 1 min)':(p.sheet?'Redo build sheet':'Build sheet');
+  h+='<div class="cardactions">'
+    +'<button class="btn small" data-act="sheet" data-id="'+esc(p.appNo)+'"'+(p.busy?' disabled':'')+'>'+esc(sheetLabel)+'</button>'
+    +(inList?'<button class="btn small ghost" data-act="remove" data-id="'+esc(p.appNo)+'">Remove</button>'
+            :'<button class="btn small ghost" data-act="save" data-id="'+esc(p.appNo)+'"'+(saved?' disabled':'')+'>'+(saved?'Saved':'Save')+'</button>')
+    +'<a href="'+esc(googleUrl(p))+'" target="_blank" rel="noopener">Google Patents ↗</a>'
+    +'<a href="https://patentcenter.uspto.gov/applications/'+encodeURIComponent(p.appNo)+'" target="_blank" rel="noopener">USPTO file ↗</a>'
+    +(ai&&ai.q?'<a href="https://www.amazon.com/s?k='+encodeURIComponent(ai.q)+'" target="_blank" rel="noopener">Already sold? ↗</a>':'')
+    +'</div>'
+    +'<details class="paste"><summary>Paste patent text (optional)</summary><textarea rows="4" data-paste="'+esc(p.appNo)+'" placeholder="If the build sheet can\'t read the patent, copy the abstract from Google Patents and paste it here, then tap Build sheet."></textarea></details>';
+  return h;
+}
+function cardEl(p,inList){
+  const d=document.createElement('article');
+  d.className='patent'; d.dataset.card=cssId(p.appNo); d.dataset.where=inList?'l':'r';
+  d.innerHTML=cardHtml(p,inList);
+  return d;
+}
+function renderResults(){
+  const box=$('results');
+  const scored=pool.filter(p=>p.ai);
+  $('resultsHead').style.display=scored.length?'block':'none';
+  if(!scored.length){ box.innerHTML=''; $('resultCount').textContent=''; return; }
+  renderPathChips();
+  let list=visibleList();
+  const total=list.length, topN=$('topN').value;
+  if(topN!=='all') list=list.slice(0,+topN);
+  $('resultCount').textContent='Showing '+list.length+' of '+total+' ranked · '+scored.length+' scored · '+seen.size.toLocaleString('en-US')+' titles screened on this device';
+  const keep=new Map();
+  box.querySelectorAll('textarea[data-paste]').forEach(t=>{ if(t.value) keep.set(t.dataset.paste,t.value); });
+  box.innerHTML='';
+  if(!list.length){ box.innerHTML='<div class="empty">NOTHING MATCHES THESE FILTERS</div>'; return; }
+  list.forEach(p=>box.appendChild(cardEl(p,false)));
+  keep.forEach((v,k)=>{ const t=box.querySelector('[data-card="'+cssId(k)+'"] textarea[data-paste]'); if(t){ t.value=v; t.closest('details').open=true; } });
+}
+function renderShortlist(){
+  const box=$('shortlist');
+  $('listCount').textContent=shortlist.length?shortlist.length+' saved':'';
+  if(!shortlist.length){ box.innerHTML='<div class="empty">SHORTLIST EMPTY<br>SAVE THE KEEPERS FROM A SWEEP</div>'; return; }
+  box.innerHTML='';
+  shortlist.forEach(p=>box.appendChild(cardEl(p,true)));
+}
+function refreshCard(id){
+  document.querySelectorAll('[data-card="'+cssId(id)+'"]').forEach(el=>{
+    const inList=el.dataset.where==='l';
+    const p=inList?shortlist.find(x=>x.appNo===id):pool.find(x=>x.appNo===id);
+    if(!p) return;
+    const ta=el.querySelector('textarea[data-paste]'); const v=ta?ta.value:'';
+    el.innerHTML=cardHtml(p,inList);
+    if(v){ const t=el.querySelector('textarea[data-paste]'); t.value=v; t.closest('details').open=true; }
+  });
+}
+
+/* ================= export ================= */
+function download(name,type,text){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type}));
+  a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function csvCell(v){ v=String(v==null?'':v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function exportCsv(){
+  const cols=['application','patent','publication','title','filed','status','score','path','time','what','verdict','unit_cost','price','first_test','notes','google_patents'];
+  const rows=shortlist.map(p=>[p.appNo,p.patentNo,p.pubNo,p.title,p.filed,p.cls&&p.cls.label,p.ai&&p.ai.score,p.ai&&PATHS[p.ai.path],p.ai&&TIMES[p.ai.t],p.ai&&p.ai.what,p.sheet&&p.sheet.verdict,p.sheet&&p.sheet.unit_cost,p.sheet&&p.sheet.price,p.sheet&&p.sheet.first,p.notes,googleUrl(p)]);
+  download('lapsehunter-shortlist.csv','text/csv',[cols].concat(rows).map(r=>r.map(csvCell).join(',')).join('\n'));
+}
+
+/* ================= events ================= */
+function saveSettings(){
+  settings.pvKey=$('pvKey').value.trim();
+  settings.claudeKey=$('claudeKey').value.trim();
+  settings.model=MODELS[$('model').value]?$('model').value:DEFAULT_MODEL;
+  save(LS.set,settings);
+  renderEstimate();
+  $('setStatus').textContent='Saved.';
+  setTimeout(()=>{ $('setStatus').textContent=''; },2500);
+}
+document.addEventListener('click',e=>{
+  const nav=e.target.closest('nav button'); if(nav){ showTab(nav.dataset.tab); return; }
+  const t=e.target.closest('[data-act]'); if(!t) return;
+  const act=t.dataset.act, id=t.dataset.id;
+  if(act==='mode'){ curMode=t.dataset.mode; renderModes(); }
+  else if(act==='lens'){ const l=t.dataset.lens; if(selected.has(l)) selected.delete(l); else selected.add(l); renderLenses(); }
+  else if(act==='lens-all'){ selected=new Set(LENSES.map(l=>l.id)); renderLenses(); }
+  else if(act==='lens-none'){ selected=new Set(); renderLenses(); }
+  else if(act==='go') runSweep();
+  else if(act==='stop'){ stopFlag=true; $('scanStatus').textContent='Stopping after the current step…'; }
+  else if(act==='path'){ view.path=t.dataset.path; renderResults(); }
+  else if(act==='top-sheets') topSheets();
+  else if(act==='sheet') buildSheet(id);
+  else if(act==='save'){
+    const p=find(id); if(!p) return;
+    if(!shortlist.some(w=>w.appNo===id)){ shortlist.unshift(Object.assign({},p,{notes:'',busy:false})); save(LS.list,shortlist); }
+    refreshCard(id);
+  }
+  else if(act==='remove'){ shortlist=shortlist.filter(w=>w.appNo!==id); save(LS.list,shortlist); renderShortlist(); refreshCard(id); }
+  else if(act==='save-settings') saveSettings();
+  else if(act==='export-json') download('lapsehunter-shortlist.json','application/json',JSON.stringify(shortlist,null,2));
+  else if(act==='export-csv') exportCsv();
+  else if(act==='reset-spend'){ settings.spent=0; save(LS.set,settings); renderSpend(); $('setStatus').textContent='Spend meter reset.'; }
+  else if(act==='reset-seen'){
+    if(!confirm('Forget which titles were already scored? The next sweep re-scores them.')) return;
+    seen=new Set(); pool=[]; offsets={}; persist(); renderResults();
+    $('setStatus').textContent='Sweep history cleared.';
+  }
+  else if(act==='clear-all'){
+    if(!confirm('Erase keys, shortlist and sweep history from this device?')) return;
+    Object.values(LS).forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+    settings={pvKey:'',claudeKey:'',model:DEFAULT_MODEL,spent:0}; shortlist=[]; seen=new Set(); pool=[]; offsets={};
+    $('pvKey').value=''; $('claudeKey').value=''; renderModelSelect(); renderSpend(); renderResults();
+    $('setStatus').textContent='Everything erased.';
+  }
+});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.matches('[data-note]')){
+    const w=shortlist.find(w=>w.appNo===el.dataset.note);
+    if(w){ w.notes=el.value; save(LS.list,shortlist); }
+  }
+  else if(el.id==='topN'||el.id==='showNo'||el.id==='weekendOnly') renderResults();
+  else if(el.id==='model'){ if(MODELS[el.value]){ settings.model=el.value; save(LS.set,settings); } renderEstimate(); }
+  else if(el.id==='depth') renderEstimate();
+});
+document.addEventListener('input',e=>{ if(e.target.id==='extraKw') renderEstimate(); });
+window.addEventListener('beforeunload',e=>{ if(running||sheetsRunning){ e.preventDefault(); e.returnValue=''; } });
+
+/* ================= boot ================= */
+pool.forEach(p=>{ p.busy=false; if(p.filed) p.cls=classify(p); });
+shortlist.forEach(p=>{ p.busy=false; if(p.filed) p.cls=classify(p); });
+$('pvKey').value=settings.pvKey||'';
+$('claudeKey').value=settings.claudeKey||'';
+renderModelSelect(); renderSpend(); renderModes(); renderLenses(); renderResults();
+</script>
+</body>
+</html>
