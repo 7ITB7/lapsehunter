@@ -1,6 +1,6 @@
 # LapseHunter
 
-Sweeps forgotten US patent filings and ranks the ones one person could build and sell today, with no workshop and no factory.
+Sweeps forgotten US patent filings and ranks the ones one person could build and sell today, with no workshop and no factory. Free to use.
 
 **Live app:** https://7itb7.github.io/lapsehunter/
 
@@ -10,26 +10,19 @@ Sweeps forgotten US patent filings and ranks the ones one person could build and
    - **Term-expired**: filed 2001–2005, past the 20-year term. Patents still covered by a term extension are dropped automatically.
    - **Lapsed (fees)**: granted, then the owner stopped paying maintenance fees. Lapses from the last two years are flagged, because they can sometimes be revived.
    - **Never granted**: abandoned before a patent issued. Filings with a continuation that might still be alive are flagged.
-2. **Triage.** Claude (Opus 5.5 by default) scores every title on how makeable it is, how much today's tech changes things, demand, and whether it's still unsold. Each card shows what likely held the idea back in its filing year and what makes it easy now.
-3. **Build sheet.** On any card, Claude reads the actual patent page, searches whether it's already sold, and writes version 1, a parts list with costs, build steps, price, the rules to check (FCC, CPSIA and so on) and a 48-hour test.
+2. **Score.** Claude scores every title on how makeable it is, how much today's tech changes things, demand, and whether it's still unsold. Each card shows what likely held the idea back in its filing year and what makes it easy now.
+3. **Build sheet.** For any card, Claude reads the actual patent, checks whether it's already sold, and writes version 1, a parts list with costs, build steps, a price, the rules to check (FCC, CPSIA and so on) and a 48-hour test.
+
+## Two ways to run Claude
+
+- **Free: copy and paste (default).** The app queues the titles, most promising filers first. Tap **Copy batch**, paste it into a new chat in the Claude app, then paste Claude's reply back. Each round scores 40 titles. Build sheets work the same way; turn on web search in the Claude app so it can read the patent and check the market. Your Claude subscription covers this, with no extra cost.
+- **Automatic: API key.** Hands-free, but Anthropic bills per use: about $0.65 for a Quick sweep with Opus 5.5, and $0.15–0.30 per build sheet. Switch to it in Settings.
 
 ## Setup
 
-Open **Settings** in the app and paste:
+Open **Settings** and paste a free **USPTO Open Data Portal key** from https://data.uspto.gov/myodp. A brand-new key can take a few minutes to start working.
 
-- A **USPTO Open Data Portal key** (free) from https://data.uspto.gov/myodp
-- An **Anthropic API key** from https://console.anthropic.com
-
-The keys are stored only in your browser's local storage. They are never in this repository.
-
-## Rough costs (Anthropic API)
-
-- Quick sweep: about $0.60 with Opus 5.5
-- Standard sweep: about $1.25
-- Deep sweep: about $2.50
-- Build sheet: about $0.15–0.30 each
-
-The header shows what you've actually spent on the device.
+Keys are stored only in your browser's local storage. They are never in this repository.
 
 ## Caveats
 

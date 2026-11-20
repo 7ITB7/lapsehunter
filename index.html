@@ -71,7 +71,7 @@
   .hint a{color:var(--bp-cyan)}
   .hint strong{color:var(--paper);font-weight:600}
   .status{font-family:var(--mono);font-size:.72rem;color:var(--amber);margin-top:10px;min-height:1.1em;word-break:break-word;line-height:1.55}
-  .check{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:.86rem;color:var(--paper);cursor:pointer;line-height:1.35}
+  label.check{display:flex;align-items:center;gap:9px;margin-top:12px;font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:.86rem;color:var(--paper);cursor:pointer;line-height:1.35}
   .check input{width:20px;height:20px;flex:none;accent-color:var(--bp-cyan)}
   .estimate{font-family:var(--mono);font-size:.68rem;color:var(--bp-cyan);margin-top:8px;letter-spacing:.04em}
 
@@ -148,6 +148,21 @@
   .sheet details{margin-top:10px}
   .sheet details summary{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:#2b6a8a;cursor:pointer}
 
+  /* free copy-paste mode */
+  .paste-panel{border-color:var(--amber)}
+  .paste-panel h2{color:var(--amber)}
+  .stepline{font-size:.86rem;line-height:1.55;color:var(--paper)}
+  .stepline strong{color:var(--amber)}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  a.btn{text-decoration:none;text-align:center}
+  label.opt{display:flex;gap:10px;align-items:flex-start;padding:11px;border:1px solid var(--bp-line);border-radius:4px;margin:8px 0 0;cursor:pointer;background:#0a1826;font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:.84rem;color:var(--bp-cyan-dim);line-height:1.45}
+  label.opt.on{border-color:var(--bp-cyan)}
+  label.opt input{margin-top:2px;width:20px;height:20px;accent-color:var(--bp-cyan);flex:none}
+  label.opt b{display:block;color:var(--paper);font-size:.92rem;margin-bottom:2px}
+  .manual{margin-top:12px;border:2px dashed var(--ink);border-radius:3px;padding:10px;background:#f5f8fa}
+  .manual p{font-size:.84rem;line-height:1.5;color:var(--ink-soft)}
+  .manual .btn.small.ghost{color:var(--ink);border-color:#8fa3b3}
+  .manual-st{font-size:.8rem;color:#7a5a12;line-height:1.4}
   .empty{text-align:center;padding:36px 16px;color:var(--bp-cyan-dim);font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;line-height:2;border:1px dashed var(--bp-line);border-radius:6px}
   .counter{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;color:var(--bp-cyan-dim);text-transform:uppercase;margin:4px 2px 10px;line-height:1.6}
 </style>
@@ -157,7 +172,7 @@
 <header>
   <div class="brand">
     <h1>LAPSEHUNTER</h1>
-    <small>forgotten patent sweeps · rev C</small>
+    <small>forgotten patent sweeps · rev D</small>
     <span class="spend" id="spend" title="Claude API spend on this device">$0.00 spent</span>
   </div>
 </header>
@@ -183,8 +198,8 @@
 
     <h2 class="sub">3 · Size</h2>
     <select id="depth" aria-label="Sweep size">
-      <option value="quick">Quick</option>
-      <option value="standard" selected>Standard</option>
+      <option value="quick" selected>Quick</option>
+      <option value="standard">Standard</option>
       <option value="deep">Deep</option>
     </select>
     <div class="estimate" id="estimate"></div>
@@ -194,7 +209,22 @@
     <button class="btn ghost" id="stopBtn" data-act="stop" style="display:none">Stop</button>
     <div class="bar"><i id="barFill"></i></div>
     <div class="status" id="scanStatus" role="status"></div>
-    <p class="hint">The sweep pulls filing titles from the USPTO, drops anything still protected or obviously chemical or pharmaceutical, then Claude scores what's left for one person with no workshop. Run it again for a fresh batch, since titles you've already scored are skipped. Open <strong>Build sheet</strong> on a promising card and Claude reads the actual patent, checks whether it's already sold, and writes a parts list, costs and a first test.</p>
+    <p class="hint">The sweep pulls filing titles from the USPTO and drops anything still protected or obviously chemical or pharmaceutical. Claude then scores what's left for one person with no workshop. Scoring is free by copy and paste into the Claude app, or hands-free with an API key (see Settings). Run it again for a fresh batch, since titles you've already scored are skipped. Open <strong>Build sheet</strong> on a promising card and Claude reads the actual patent, checks whether it's already sold, and writes a parts list, costs and a first test.</p>
+  </div>
+
+  <div class="panel paste-panel" id="pastePanel" style="display:none">
+    <h2 id="pasteTitle">Score with Claude</h2>
+    <p class="stepline" id="pasteStep"></p>
+    <div class="btnrow">
+      <button class="btn small" data-act="copy-batch" id="copyBatchBtn">Copy batch</button>
+      <a class="btn small ghost" href="https://claude.ai/new" target="_blank" rel="noopener">Open Claude ↗</a>
+    </div>
+    <textarea id="copyFallback" rows="5" readonly style="display:none;margin-top:10px" aria-label="Batch text to copy"></textarea>
+    <label for="replyBox">Claude's reply</label>
+    <textarea id="replyBox" rows="5" placeholder="Paste Claude's whole reply here"></textarea>
+    <button class="btn" data-act="add-scores">Add scores</button>
+    <div class="status" id="pasteStatus" role="status"></div>
+    <button class="btn ghost small" data-act="clear-pending" style="margin-top:12px">Drop the waiting titles</button>
   </div>
 
   <div class="panel" id="resultsHead" style="display:none">
@@ -233,20 +263,24 @@
     <p class="hint">Free. Sign in at <a href="https://data.uspto.gov/myodp" target="_blank" rel="noopener">data.uspto.gov/myodp</a> and copy the key from <strong>My ODP</strong>. A brand-new key can take a few minutes to start working.</p>
   </div>
   <div class="panel">
-    <h2>Claude</h2>
-    <label for="claudeKey">Anthropic API key</label>
-    <input type="password" id="claudeKey" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
-    <label for="model">Model</label>
-    <select id="model"></select>
-    <p class="hint">Opus 5.5 gives the sharpest judgment and costs about twice what Sonnet does. Get a key at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
+    <h2>How Claude scores</h2>
+    <label class="opt"><input type="radio" name="scoring" value="free"><span><b>Free: copy and paste</b>You paste batches into the Claude app, which your subscription already covers. No API key and no extra cost. Pick Opus in the app for the sharpest scores.</span></label>
+    <label class="opt"><input type="radio" name="scoring" value="api"><span><b>Automatic: API key</b>Hands-free, but Anthropic bills per use: about $0.60 for a Quick sweep with Opus.</span></label>
+    <div id="apiFields" style="display:none">
+      <label for="claudeKey">Anthropic API key</label>
+      <input type="password" id="claudeKey" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+      <label for="model">Model</label>
+      <select id="model"></select>
+      <p class="hint">Opus 5.5 gives the sharpest judgment and costs about twice what Sonnet does. Get a key at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>.</p>
+    </div>
   </div>
   <div class="panel">
     <h2>Privacy</h2>
-    <p class="hint" style="margin-top:0">Both keys are stored only in this browser's local storage. They're never part of the site's code, so the public GitHub page doesn't expose them. Your keys go only to the USPTO and to Anthropic, each straight from your browser.</p>
+    <p class="hint" style="margin-top:0">Your keys are stored only in this browser's local storage. They're never part of the site's code, so the public GitHub page doesn't expose them. Each key goes only to its own service, the USPTO or Anthropic, straight from your browser.</p>
   </div>
   <div class="panel">
     <h2>Data</h2>
-    <button class="btn ghost" data-act="reset-spend">Reset spend meter</button>
+    <button class="btn ghost" data-act="reset-spend" id="resetSpendBtn">Reset spend meter</button>
     <button class="btn ghost" data-act="reset-seen">Forget sweep history (re-score everything)</button>
     <button class="btn danger" data-act="clear-all">Erase everything on this device</button>
   </div>
@@ -270,7 +304,9 @@ const MODELS={
 };
 const DEFAULT_MODEL='claude-opus-5-5';
 const SEARCH_USD=0.01;
-const LS={set:'lh_settings',list:'lh_shortlist',seen:'lh_seen',pool:'lh_pool',offs:'lh_offsets'};
+const LS={set:'lh_settings',list:'lh_shortlist',seen:'lh_seen',pool:'lh_pool',offs:'lh_offsets',pend:'lh_pending'};
+const PASTE_BATCH=40;
+const CLAUDE_NEW='https://claude.ai/new';
 const ODP='https://api.uspto.gov/api/v1/patent/applications/search';
 const FIELDS=[
   'applicationNumberText','applicationMetaData.inventionTitle','applicationMetaData.filingDate','applicationMetaData.effectiveFilingDate',
@@ -316,7 +352,7 @@ const LENSES=[
 ];
 const PATHS={app:'App / software',assemble:'Assemble',sew:'Sewn',print:'3D-print / POD',outsource:'Outsource',no:'Not makeable'};
 const TIMES={wknd:'weekend',wks:'weeks',mos:'months'};
-const JUNK=/\b(compounds?|compositions?|polymers?|peptides?|antibod\w*|pharmaceutical\w*|semiconductors?|catalysts?|oligonucleotides?|genes?|proteins?|vaccines?|insecticid\w*|herbicid\w*|alloys?|reactors?|integrated circuits?|lithograph\w*|transistors?|fuel cells?|wafers?|optical fibers?|nucleic|enzymes?|polypeptides?|steroids?|chemotherap\w*|transgenic|toxins?|agonists?|antagonists?|inhibitors?|formulations?|dosage|methods? (?:for|of) treating)\b/i;
+const JUNK=/\b(compounds?|compositions?|polymers?|peptides?|antibod\w*|pharmaceutical\w*|semiconductors?|catalysts?|oligonucleotides?|genes?|proteins?|vaccines?|insecticid\w*|herbicid\w*|alloys?|reactors?|integrated circuits?|lithograph\w*|transistors?|fuel cells?|wafers?|optical fibers?|nucleic|enzymes?|polypeptides?|steroids?|chemotherap\w*|transgenic|toxins?|agonists?|antagonists?|inhibitors?|formulations?|dosage|positron|tomograph\w*|pet\/(?:mr|ct)|methods? (?:for|of) treating)\b/i;
 const CPC_JUNK=/^(A61K|A61P|A01N|A01P|C0\d|C1\d|C2\d|C3\d|C40|H01L|H10|G21|B01J|B82)/;
 const CORP=/\b(inc|incorporated|corp|corporation|co|company|llc|ltd|limited|gmbh|ag|sa|nv|kk|plc|lp|university|foundation|institute|laboratories|technologies|systems|industries|group|holdings)\b\.?/i;
 
@@ -327,9 +363,14 @@ THE HUNT: forgotten patent filings that stalled because the technology of the da
 /* ================= state ================= */
 function load(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
 function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
-let settings=Object.assign({pvKey:'',claudeKey:'',model:DEFAULT_MODEL,spent:0},load(LS.set)||{});
+let settings=Object.assign({pvKey:'',claudeKey:'',model:DEFAULT_MODEL,spent:0,scoring:'free'},load(LS.set)||{});
 if(!MODELS[settings.model]) settings.model=DEFAULT_MODEL;
+if(settings.scoring!=='api') settings.scoring='free';
 let shortlist=load(LS.list)||[];
+let pending=load(LS.pend)||[];
+let lastBatchIds=[];
+const manualOpen=new Set();
+const isFree=()=>settings.scoring!=='api';
 let seen=new Set(load(LS.seen)||[]);
 let pool=load(LS.pool)||[];
 let offsets=load(LS.offs)||{};
@@ -353,6 +394,7 @@ function persist(){
   pool.sort((a,b)=>sc(b)-sc(a));
   pool=pool.slice(0,400);
   save(LS.pool,pool);
+  save(LS.pend,pending.slice(0,800));
   save(LS.seen,[...seen].slice(-12000));
   save(LS.offs,offsets);
   save(LS.set,settings);
@@ -387,6 +429,12 @@ function renderEstimate(){
   const d=DEPTHS[$('depth').value]||DEPTHS.standard;
   const nb=buckets(MODES[curMode].y1,MODES[curMode].y2,d.buckets).length;
   const titles=activeLenses().length*nb*d.limit;
+  if(!titles){ $('estimate').textContent='Pick at least one field.'; return; }
+  if(isFree()){
+    const rounds=Math.max(1,Math.ceil(titles*0.75/PASTE_BATCH));
+    $('estimate').textContent='Pulls up to '+titles.toLocaleString('en-US')+' titles · free · about '+rounds+' copy-paste round'+(rounds>1?'s':'')+' in the Claude app (best filers come first)';
+    return;
+  }
   const m=MODELS[settings.model];
   const perBatch=(2200*m.pin+3200*m.pout)/1e6;
   const cost=Math.ceil(titles*0.75/25)*perBatch;
@@ -618,7 +666,7 @@ async function runSweep(){
   if(running) return;
   const st=$('scanStatus');
   if(!settings.pvKey){ st.textContent='Add your USPTO key in Settings first.'; showTab('settings'); $('pvKey').focus(); return; }
-  if(!settings.claudeKey){ st.textContent='Add your Anthropic API key in Settings first. Claude does the scoring.'; showTab('settings'); $('claudeKey').focus(); return; }
+  if(!isFree()&&!settings.claudeKey){ st.textContent='Add your Anthropic API key in Settings, or switch scoring to Free.'; showTab('settings'); $('claudeKey').focus(); return; }
   const lenses=activeLenses();
   if(!lenses.length){ st.textContent='Pick at least one field to sweep.'; return; }
   const mode=MODES[curMode], depth=DEPTHS[$('depth').value]||DEPTHS.standard;
@@ -669,6 +717,15 @@ async function runSweep(){
       persist();
       st.textContent='Pulled '+raw.size+' titles, but none were new and usable ('+skipText+'). Run again for the next batch, or add more fields.';
       setProgress(1); return;
+    }
+    /* free mode: queue for copy-paste scoring */
+    if(isFree()){
+      addPending(cand);
+      renderPaste();
+      st.textContent='Pulled '+raw.size+' titles from '+matched.toLocaleString('en-US')+' matching filings. '+cand.length+' are ready for Claude'+(skipText?' (skipped '+skipText+')':'')+'. Score them in the panel below.';
+      setProgress(1);
+      setTimeout(()=>$('pastePanel').scrollIntoView({block:'start'}),60);
+      return;
     }
     /* phase 2: Claude */
     const batches=chunk(cand,25);
@@ -774,6 +831,176 @@ function patch(id,fields){
   persist(); save(LS.list,shortlist);
   return a||b;
 }
+function applySheet(id,r,meta){
+  const p=find(id); if(!p) return;
+  const arr=v=>Array.isArray(v)?v.filter(x=>x!=null):[];
+  const rivalUrl=u=>{ u=safeUrl(u); return meta.okUrls?(meta.okUrls.has(u)?u:''):u; };
+  const ai=normalize({what:r.what,then:r.then,unlock:r.unlock,path:r.path,t:r.t,make:r.s_make,now:r.s_now,want:r.s_want,open:r.s_open,
+    pitch:r.v1,kill:r.risks,q:(p.ai&&p.ai.q)||''});
+  const sheet={
+    read:str(r.read,20)||(meta.pasted?'pasted':'title'),
+    fetched:!!meta.fetched, offline:!!meta.offline, manual:!!meta.manual,
+    v1:str(r.v1,320),
+    parts:arr(r.parts).slice(0,8).map(x=>({item:str(x.item,90),cost:str(x.cost,24)})).filter(x=>x.item),
+    steps:arr(r.steps).slice(0,6).map(s=>str(s,220)).filter(Boolean),
+    unit_cost:str(r.unit_cost,24),price:str(r.price,24),channels:str(r.channels,140),
+    compliance:str(r.compliance,220),market:str(r.market,360),
+    rivals:arr(r.rivals).slice(0,3).map(x=>({name:str(x.name,90),price:str(x.price,24),url:rivalUrl(x.url)})).filter(x=>x.name),
+    risks:str(r.risks,260),first:str(r.first_test,320),
+    verdict:['pursue','test','skip'].includes(r.verdict)?r.verdict:'test',
+    sources:meta.sources||[],at:new Date().toISOString().slice(0,10),model:meta.model||''
+  };
+  patch(id,{ai,sheet,busy:false,sheetErr:''});
+}
+
+/* ---------- free mode: copy-paste with the Claude app ---------- */
+async function copyText(t){
+  try{ if(navigator.clipboard&&window.isSecureContext){ await navigator.clipboard.writeText(t); return true; } }catch(e){}
+  const ta=document.createElement('textarea');
+  ta.value=t; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.top='-1000px';
+  document.body.appendChild(ta); ta.select();
+  let ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
+  ta.remove(); return ok;
+}
+function flash(btn,txt){ if(!btn) return; const o=btn.textContent; btn.textContent=txt; setTimeout(()=>{ if(btn.textContent===txt) btn.textContent=o; },1800); }
+function priority(p){ const k={solo:0,small:1,unknown:2,company:3}[p.kind]; return (k==null?2:k)*2+(p.cls&&p.cls.ok?0:1); }
+function addPending(items){
+  const have=new Set(pending.map(p=>p.appNo));
+  items.forEach(p=>{ if(!have.has(p.appNo)){ pending.push(p); have.add(p.appNo); } seen.add(p.appNo); });
+  pending.sort((a,b)=>priority(a)-priority(b));
+  pending=pending.slice(0,800);
+  persist();
+}
+function renderPaste(){
+  const panel=$('pastePanel');
+  if(!isFree()||!pending.length){ panel.style.display='none'; return; }
+  panel.style.display='block';
+  const n=Math.min(PASTE_BATCH,pending.length), rounds=Math.ceil(pending.length/PASTE_BATCH);
+  $('pasteTitle').textContent='Score with Claude · '+pending.length+' waiting';
+  $('pasteStep').innerHTML='Next batch: '+n+' titles ('+rounds+' round'+(rounds>1?'s':'')+' left, most promising filers first). '
+    +'<strong>1.</strong> Tap Copy batch. <strong>2.</strong> Paste it into a new chat in the Claude app; Opus gives the sharpest scores. '
+    +'<strong>3.</strong> Copy Claude\'s whole reply and paste it below.';
+  $('copyBatchBtn').textContent='Copy batch ('+n+' titles)';
+}
+function manualTriagePrompt(items){
+  const lines=items.map(p=>p.appNo+'. ['+(p.filed||'').slice(0,4)+'] '+p.title+' | '+(p.who||'unknown')+' | '+kindLabel(p)+' | CPC '+(p.cpc||'-')+' | '+p.cls.label).join('\n');
+  return `Score these ${items.length} forgotten US patent filings for me. I'll paste your reply into an app, so reply with ONLY a JSON array: no intro, no notes.
+
+${BUILDER}
+
+You only have each title, filing year, filer, CPC class and status, so you are inferring the invention. Stay skeptical: if a title is vague, score it low rather than inventing a product. A micro or small entity suggests a garage inventor whose idea never got commercialized; a large company suggests a strategic abandonment.
+
+ITEMS (id. [year] title | filer | filer type | CPC | status):
+${lines}
+
+One object per item, in the same order, using the id at the start of each line:
+{"id":"<id>","what":"plain-English guess at the product, max 14 words","then":"why it likely stalled in its filing year, max 12 words","unlock":"what makes it easy in 2026, max 12 words","path":"app|assemble|sew|print|outsource|no","t":"wknd|wks|mos","make":1-10,"now":1-10,"want":1-10,"open":1-10,"pitch":"what he would actually sell and how, max 18 words","kill":"the most likely reason this is NOT worth doing, max 18 words","q":"2-5 word shopping search that would show if it is already sold"}
+
+Scoring: be harsh; most items should land under 5.
+- make: how easily the builder above could produce a sellable version. 1 = needs a factory, lab or regulatory approval; 10 = an app or simple assembly done in a weekend.
+- now: how much 2026 tech changes feasibility versus the filing year. 1 = nothing changed; 10 = impossible then, trivial now.
+- want: plausible demand from real buyers today.
+- open: likelihood nobody sells this today. If you recognize a product category clearly sold today, score 3 or lower.
+- path "no" = not makeable by this builder. t = time to a first sellable version.
+Include every item, even weak ones.`;
+}
+async function copyBatch(){
+  const b=pending.slice(0,PASTE_BATCH); if(!b.length) return;
+  lastBatchIds=b.map(p=>p.appNo);
+  const text=manualTriagePrompt(b), fb=$('copyFallback');
+  if(await copyText(text)){
+    fb.style.display='none';
+    flash($('copyBatchBtn'),'Copied ✓');
+    $('pasteStatus').textContent='Copied. Paste it into a new Claude chat, then bring the reply back here.';
+  }else{
+    fb.value=text; fb.style.display='block'; fb.focus(); fb.select();
+    $('pasteStatus').textContent='Your browser blocked copying. Press and hold the box above, choose Select all, then Copy.';
+  }
+}
+function addScores(){
+  const st=$('pasteStatus'), txt=$('replyBox').value.trim();
+  if(!txt){ st.textContent='Paste Claude\'s reply into the box first.'; return; }
+  let arr;
+  try{ arr=parseJson(txt,'array'); }catch(e){ st.textContent='That doesn\'t look like the scoring reply. Copy Claude\'s whole reply (it starts with [ ) and paste it again.'; return; }
+  if(!Array.isArray(arr)) arr=[arr];
+  const byId=new Map(pending.map(p=>[p.appNo,p]));
+  let hit=0;
+  arr.forEach(r=>{
+    const id=String(r&&r.id!=null?r.id:'').replace(/\D/g,'');
+    const p=byId.get(id);
+    if(p&&!p.ai){ p.ai=normalize(r); hit++; }
+  });
+  if(!hit&&lastBatchIds.length){
+    arr.forEach((r,k)=>{ const p=byId.get(lastBatchIds[k]); if(p&&!p.ai&&r&&typeof r==='object'){ p.ai=normalize(r); hit++; } });
+  }
+  if(!hit){ st.textContent='None of those scores matched the waiting titles. Make sure the reply is for the latest batch you copied.'; return; }
+  const done=pending.filter(p=>p.ai);
+  pending=pending.filter(p=>!p.ai);
+  done.forEach(p=>pool.push(p));
+  $('replyBox').value=''; $('copyFallback').style.display='none';
+  persist(); renderPaste(); renderResults();
+  const best=done.filter(p=>p.ai.path!=='no').sort((a,b)=>b.ai.score-a.ai.score)[0];
+  st.textContent='Added '+hit+' scores'+(best?' · best: '+best.ai.score.toFixed(1)+' "'+best.title.slice(0,48)+'"':'')
+    +(pending.length?'. The next batch is ready above.':'. All waiting titles are scored. Run another sweep for more.');
+  if(!pending.length){ $('scanStatus').textContent=st.textContent; }
+}
+function manualSheetPrompt(p,pasted){
+  const num=[p.patentNo&&'US patent '+Number(p.patentNo).toLocaleString('en-US'),p.pubNo&&'publication '+p.pubNo,'application '+p.appNo].filter(Boolean).join(' · ');
+  return `Write a build sheet for one forgotten US patent filing. I'll paste your reply into an app, so reply with ONLY one JSON object: no intro, no notes.
+
+${BUILDER}
+
+THE FILING
+Title: ${p.title}
+Numbers: ${num}
+Filed: ${p.filed||'unknown'} · Status: ${p.statusText||p.cls.label}${p.statusDate?' ('+p.statusDate+')':''}
+Filer: ${p.who||'unknown'} (${kindLabel(p)})
+Patent page: ${googleUrl(p)}
+${pasted?'\nTEXT FROM THE PATENT (pasted by me):\n'+pasted+'\n':''}
+STEPS
+1. ${pasted?'Use the pasted text above as the description of the invention.':'Read the abstract and first claim from the patent page above. Use web search or fetch if you can. If you cannot read it, work from the title and put "title" in "read".'}
+2. If you can search the web, check whether this product, or anything doing the same job, is already sold today (Amazon, Etsy, Kickstarter or Indiegogo, app stores). Search by what it does, not by the patent title.
+3. Write the build sheet. Be harsh and specific, prices in USD. If a close product is already sold widely, say so plainly and score "s_open" 3 or lower. Only list rivals and sources you actually found.
+
+The JSON object:
+{"read":"patent|pasted|search|title (what you actually based this on)","what":"what the invention really is, max 25 words","then":"why it stalled in its filing year, max 20 words","unlock":"what makes it easy now, max 20 words","v1":"the simplest sellable version 1, max 40 words","parts":[{"item":"part or service","cost":"$ per unit"}],"steps":["3 to 6 build steps"],"unit_cost":"$","price":"$ retail","channels":"where to sell, max 15 words","compliance":"FCC, CPSIA, UL, FDA or other rules to check, or 'none obvious', max 25 words","market":"what you found about similar products today, max 40 words","rivals":[{"name":"","url":"","price":""}],"risks":"max 30 words","first_test":"the cheapest test in the next 48 hours, max 40 words","verdict":"pursue|test|skip","path":"app|assemble|sew|print|outsource|no","t":"wknd|wks|mos","s_make":1-10,"s_now":1-10,"s_want":1-10,"s_open":1-10,"sources":[{"title":"","url":""}]}
+Use at most 8 parts, 3 rivals and 6 sources.`;
+}
+function cardValues(id,attr){
+  return [...document.querySelectorAll('[data-card="'+cssId(id)+'"] textarea['+attr+']')].map(t=>t.value.trim()).sort((a,b)=>b.length-a.length)[0]||'';
+}
+function setManualStatus(id,msg){ document.querySelectorAll('[data-card="'+cssId(id)+'"] [data-sheetst]').forEach(el=>{ el.textContent=msg; }); }
+async function copySheet(id,btn){
+  const p=find(id); if(!p) return;
+  const typed=cardValues(id,'data-paste');
+  const text=manualSheetPrompt(p,typed.length>40?typed.slice(0,8000):'');
+  if(await copyText(text)){ flash(btn,'Copied ✓'); setManualStatus(id,'Copied. Paste it into a new Claude chat with web search on.'); }
+  else{
+    document.querySelectorAll('[data-card="'+cssId(id)+'"] textarea[data-sheetcopy]').forEach(t=>{ t.value=text; t.style.display='block'; });
+    setManualStatus(id,'Your browser blocked copying. Press and hold the text box, Select all, then Copy.');
+  }
+}
+function addSheet(id){
+  const txt=cardValues(id,'data-sheetreply');
+  if(!txt){ setManualStatus(id,'Paste Claude\'s reply first.'); return; }
+  let r;
+  try{ r=parseJson(txt,'object'); }catch(e){ setManualStatus(id,'That doesn\'t look like a build sheet reply. Copy Claude\'s whole reply (it starts with { ) and paste it again.'); return; }
+  if(!r||typeof r!=='object'||Array.isArray(r)||!(r.v1||r.verdict||r.what)){ setManualStatus(id,'That reply isn\'t a build sheet. Make sure you pasted the reply to the build sheet request.'); return; }
+  const sources=(Array.isArray(r.sources)?r.sources:[]).filter(Boolean).map(s=>({url:safeUrl(s.url),title:str(s.title||s.url,140)})).filter(s=>s.url).slice(0,10);
+  applySheet(id,r,{sources,okUrls:null,manual:true,fetched:r.read==='patent',pasted:r.read==='pasted',model:'Claude app'});
+  manualOpen.delete(id);
+  refreshCard(id);
+}
+function applyScoringUI(){
+  const free=isFree();
+  document.querySelectorAll('input[name=scoring]').forEach(r=>{ r.checked=r.value===(free?'free':'api'); r.closest('.opt').classList.toggle('on',r.checked); });
+  $('apiFields').style.display=free?'none':'block';
+  $('spend').style.display=free?'none':'';
+  $('resetSpendBtn').style.display=free?'none':'block';
+  $('topSheetsBtn').style.display=free?'none':'block';
+  renderEstimate(); renderPaste();
+}
+
 async function buildSheet(id){
   const p=find(id); if(!p||p.busy) return;
   const typed=[...document.querySelectorAll('[data-card="'+cssId(id)+'"] textarea[data-paste]')].map(t=>t.value.trim()).sort((a,b)=>b.length-a.length)[0]||'';
@@ -789,23 +1016,7 @@ async function buildSheet(id){
     }
     const r=parseJson(finalText(content),'object');
     const sources=sourcesOf(content).slice(0,10);
-    const okUrls=new Set(sources.map(s=>s.url));
-    const ai=normalize({what:r.what,then:r.then,unlock:r.unlock,path:r.path,t:r.t,make:r.s_make,now:r.s_now,want:r.s_want,open:r.s_open,
-      pitch:r.v1,kill:r.risks,q:(p.ai&&p.ai.q)||''});
-    const sheet={
-      read:str(r.read,20)||(pasted?'pasted':'title'),
-      fetched:patentRead(content), offline,
-      v1:str(r.v1,320),
-      parts:(Array.isArray(r.parts)?r.parts:[]).slice(0,8).map(x=>({item:str(x.item,90),cost:str(x.cost,24)})).filter(x=>x.item),
-      steps:(Array.isArray(r.steps)?r.steps:[]).slice(0,6).map(s=>str(s,220)).filter(Boolean),
-      unit_cost:str(r.unit_cost,24),price:str(r.price,24),channels:str(r.channels,140),
-      compliance:str(r.compliance,220),market:str(r.market,360),
-      rivals:(Array.isArray(r.rivals)?r.rivals:[]).slice(0,3).map(x=>({name:str(x.name,90),price:str(x.price,24),url:okUrls.has(String(x.url||''))?String(x.url):''})).filter(x=>x.name),
-      risks:str(r.risks,260),first:str(r.first_test,320),
-      verdict:['pursue','test','skip'].includes(r.verdict)?r.verdict:'test',
-      sources,at:new Date().toISOString().slice(0,10),model:MODELS[settings.model].label
-    };
-    patch(id,{ai,sheet,busy:false});
+    applySheet(id,r,{sources,okUrls:new Set(sources.map(s=>s.url)),fetched:patentRead(content),offline,pasted:!!pasted,model:MODELS[settings.model].label});
   }catch(err){
     patch(id,{busy:false,sheetErr:err.message});
   }
@@ -844,6 +1055,8 @@ function sheetHtml(s){
   let h='<div class="sheet">'
     +'<div class="sheet-h"><span class="verdict '+vcls+'">'+esc(s.verdict.toUpperCase())+'</span><span>Build sheet · '+esc(basis)+' · '+esc(s.model||'')+' · '+esc(s.at||'')+'</span></div>';
   if(s.offline) h+='<div class="statusnote warn">Web search is switched off for your Anthropic account, so this sheet couldn\'t check the market.</div>';
+  if(s.manual&&s.read==='title') h+='<div class="statusnote warn">Claude couldn\'t read the patent, so this is based on the title. Turn on web search in the Claude app, or paste the abstract into this card, and redo it.</div>';
+  if(s.manual&&(s.rivals.some(x=>x.url)||s.sources.length)) h+='<div class="statusnote">Links came from Claude\'s reply. Open them to confirm they\'re real.</div>';
   if(s.v1) h+='<div class="field"><b>Version 1</b>'+esc(s.v1)+'</div>';
   if(s.parts.length) h+='<div class="field"><b>Parts &amp; services</b><table class="parts">'+s.parts.map(x=>'<tr><td>'+esc(x.item)+'</td><td>'+esc(x.cost)+'</td></tr>').join('')+'</table></div>';
   if(s.steps.length) h+='<div class="field"><b>Build steps</b><ol class="steps">'+s.steps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol></div>';
@@ -881,7 +1094,8 @@ function cardHtml(p,inList){
   if(p.sheet) h+=sheetHtml(p.sheet);
   if(p.sheetErr) h+='<div class="errline">⚠ Build sheet failed: '+esc(p.sheetErr)+'</div>';
   if(inList) h+='<div class="notes-input"><span>Notes</span><textarea rows="2" data-note="'+esc(p.appNo)+'" aria-label="Notes">'+esc(p.notes||'')+'</textarea></div>';
-  const sheetLabel=p.busy?'Writing build sheet… (about 1 min)':(p.sheet?'Redo build sheet':'Build sheet');
+  if(isFree()&&manualOpen.has(p.appNo)) h+=manualHtml(p);
+  const sheetLabel=p.busy?'Writing build sheet… (about 1 min)':(isFree()&&manualOpen.has(p.appNo))?'Hide request':(p.sheet?'Redo build sheet':'Build sheet');
   h+='<div class="cardactions">'
     +'<button class="btn small" data-act="sheet" data-id="'+esc(p.appNo)+'"'+(p.busy?' disabled':'')+'>'+esc(sheetLabel)+'</button>'
     +(inList?'<button class="btn small ghost" data-act="remove" data-id="'+esc(p.appNo)+'">Remove</button>'
@@ -890,8 +1104,17 @@ function cardHtml(p,inList){
     +'<a href="https://patentcenter.uspto.gov/applications/'+encodeURIComponent(p.appNo)+'" target="_blank" rel="noopener">USPTO file ↗</a>'
     +(ai&&ai.q?'<a href="https://www.amazon.com/s?k='+encodeURIComponent(ai.q)+'" target="_blank" rel="noopener">Already sold? ↗</a>':'')
     +'</div>'
-    +'<details class="paste"><summary>Paste patent text (optional)</summary><textarea rows="4" data-paste="'+esc(p.appNo)+'" placeholder="If the build sheet can\'t read the patent, copy the abstract from Google Patents and paste it here, then tap Build sheet."></textarea></details>';
+    +'<details class="paste"><summary>Paste patent text (optional)</summary><textarea rows="4" data-paste="'+esc(p.appNo)+'" placeholder="Optional: copy the abstract from Google Patents and paste it here. The build sheet will use it instead of looking the patent up."></textarea></details>';
   return h;
+}
+function manualHtml(p){
+  const id=esc(p.appNo);
+  return '<div class="manual"><p><strong>Free build sheet.</strong> Copy the request and paste it into a new Claude chat with web search turned on, so Claude can read the patent and check the market. Then copy Claude\'s whole reply and paste it here.</p>'
+    +'<div class="btnrow"><button class="btn small" data-act="copy-sheet" data-id="'+id+'">Copy request</button>'
+    +'<a class="btn small ghost" href="'+CLAUDE_NEW+'" target="_blank" rel="noopener">Open Claude ↗</a></div>'
+    +'<textarea rows="5" readonly data-sheetcopy="'+id+'" style="display:none" aria-label="Request text to copy"></textarea>'
+    +'<textarea rows="5" data-sheetreply="'+id+'" placeholder="Paste Claude\'s reply here" aria-label="Claude\'s build sheet reply"></textarea>'
+    +'<div class="btnrow"><button class="btn small" data-act="add-sheet" data-id="'+id+'">Add build sheet</button><span class="manual-st" data-sheetst="'+id+'" role="status"></span></div></div>';
 }
 function cardEl(p,inList){
   const d=document.createElement('article');
@@ -909,12 +1132,27 @@ function renderResults(){
   const total=list.length, topN=$('topN').value;
   if(topN!=='all') list=list.slice(0,+topN);
   $('resultCount').textContent='Showing '+list.length+' of '+total+' ranked · '+scored.length+' scored · '+seen.size.toLocaleString('en-US')+' titles screened on this device';
-  const keep=new Map();
-  box.querySelectorAll('textarea[data-paste]').forEach(t=>{ if(t.value) keep.set(t.dataset.paste,t.value); });
+  const keep=keepTyped(box);
   box.innerHTML='';
   if(!list.length){ box.innerHTML='<div class="empty">NOTHING MATCHES THESE FILTERS</div>'; return; }
   list.forEach(p=>box.appendChild(cardEl(p,false)));
-  keep.forEach((v,k)=>{ const t=box.querySelector('[data-card="'+cssId(k)+'"] textarea[data-paste]'); if(t){ t.value=v; t.closest('details').open=true; } });
+  restoreTyped(box,keep);
+}
+function keepTyped(root){
+  const keep=[];
+  root.querySelectorAll('textarea[data-paste],textarea[data-sheetreply]').forEach(t=>{
+    if(t.value){ const a=t.hasAttribute('data-paste')?'data-paste':'data-sheetreply'; keep.push([a,t.getAttribute(a),t.value]); }
+  });
+  return keep;
+}
+function restoreTyped(root,keep){
+  keep.forEach(([a,id,v])=>{
+    root.querySelectorAll('textarea['+a+']').forEach(t=>{
+      if(t.getAttribute(a)!==id) return;
+      t.value=v;
+      const d=t.closest('details'); if(d) d.open=true;
+    });
+  });
 }
 function renderShortlist(){
   const box=$('shortlist');
@@ -928,9 +1166,9 @@ function refreshCard(id){
     const inList=el.dataset.where==='l';
     const p=inList?shortlist.find(x=>x.appNo===id):pool.find(x=>x.appNo===id);
     if(!p) return;
-    const ta=el.querySelector('textarea[data-paste]'); const v=ta?ta.value:'';
+    const keep=keepTyped(el);
     el.innerHTML=cardHtml(p,inList);
-    if(v){ const t=el.querySelector('textarea[data-paste]'); t.value=v; t.closest('details').open=true; }
+    restoreTyped(el,keep);
   });
 }
 
@@ -970,7 +1208,18 @@ document.addEventListener('click',e=>{
   else if(act==='stop'){ stopFlag=true; $('scanStatus').textContent='Stopping after the current step…'; }
   else if(act==='path'){ view.path=t.dataset.path; renderResults(); }
   else if(act==='top-sheets') topSheets();
-  else if(act==='sheet') buildSheet(id);
+  else if(act==='sheet'){
+    if(isFree()){ if(manualOpen.has(id)) manualOpen.delete(id); else manualOpen.add(id); refreshCard(id); }
+    else buildSheet(id);
+  }
+  else if(act==='copy-sheet') copySheet(id,t);
+  else if(act==='add-sheet') addSheet(id);
+  else if(act==='copy-batch') copyBatch();
+  else if(act==='add-scores') addScores();
+  else if(act==='clear-pending'){
+    if(!confirm('Drop the '+pending.length+' titles waiting for scores? They won\'t come back in later sweeps.')) return;
+    pending=[]; persist(); renderPaste(); $('pasteStatus').textContent='';
+  }
   else if(act==='save'){
     const p=find(id); if(!p) return;
     if(!shortlist.some(w=>w.appNo===id)){ shortlist.unshift(Object.assign({},p,{notes:'',busy:false})); save(LS.list,shortlist); }
@@ -983,14 +1232,14 @@ document.addEventListener('click',e=>{
   else if(act==='reset-spend'){ settings.spent=0; save(LS.set,settings); renderSpend(); $('setStatus').textContent='Spend meter reset.'; }
   else if(act==='reset-seen'){
     if(!confirm('Forget which titles were already scored? The next sweep re-scores them.')) return;
-    seen=new Set(); pool=[]; offsets={}; persist(); renderResults();
+    seen=new Set(); pool=[]; pending=[]; offsets={}; persist(); renderResults(); renderPaste();
     $('setStatus').textContent='Sweep history cleared.';
   }
   else if(act==='clear-all'){
     if(!confirm('Erase keys, shortlist and sweep history from this device?')) return;
     Object.values(LS).forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
-    settings={pvKey:'',claudeKey:'',model:DEFAULT_MODEL,spent:0}; shortlist=[]; seen=new Set(); pool=[]; offsets={};
-    $('pvKey').value=''; $('claudeKey').value=''; renderModelSelect(); renderSpend(); renderResults();
+    settings={pvKey:'',claudeKey:'',model:DEFAULT_MODEL,spent:0,scoring:'free'}; shortlist=[]; seen=new Set(); pool=[]; pending=[]; offsets={};
+    $('pvKey').value=''; $('claudeKey').value=''; renderModelSelect(); renderSpend(); renderResults(); applyScoringUI();
     $('setStatus').textContent='Everything erased.';
   }
 });
@@ -1001,6 +1250,7 @@ document.addEventListener('change',e=>{
     if(w){ w.notes=el.value; save(LS.list,shortlist); }
   }
   else if(el.id==='topN'||el.id==='showNo'||el.id==='weekendOnly') renderResults();
+  else if(el.name==='scoring'){ settings.scoring=el.value==='api'?'api':'free'; save(LS.set,settings); applyScoringUI(); renderResults(); }
   else if(el.id==='model'){ if(MODELS[el.value]){ settings.model=el.value; save(LS.set,settings); } renderEstimate(); }
   else if(el.id==='depth') renderEstimate();
 });
@@ -1010,9 +1260,10 @@ window.addEventListener('beforeunload',e=>{ if(running||sheetsRunning){ e.preven
 /* ================= boot ================= */
 pool.forEach(p=>{ p.busy=false; if(p.filed) p.cls=classify(p); });
 shortlist.forEach(p=>{ p.busy=false; if(p.filed) p.cls=classify(p); });
+pending.forEach(p=>{ if(p.filed) p.cls=classify(p); });
 $('pvKey').value=settings.pvKey||'';
 $('claudeKey').value=settings.claudeKey||'';
-renderModelSelect(); renderSpend(); renderModes(); renderLenses(); renderResults();
+renderModelSelect(); renderSpend(); renderModes(); renderLenses(); renderResults(); applyScoringUI();
 </script>
 </body>
 </html>
